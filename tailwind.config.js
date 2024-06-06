@@ -1,11 +1,5 @@
 module.exports = {
     theme: {
-        /*  extend: {
-             
-              backgroundImage: {
-                  'radial-green-yellow': 'radial-gradient(circle, #00FF00, #FFFF00)',
-              },
-          },*/
         extend: {
             colors: {
                 red: "#111",

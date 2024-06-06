@@ -1,10 +1,11 @@
 import React from 'react';
-import Cards from '../components/Cards';
+import BlackJack from "../components/BlackJack";
+import '../style/output.css';
 
 const App = () => {
     return (
         <div>
-            <Cards />
+            <BlackJack />
         </div>
     );
 };
