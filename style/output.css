@@ -554,48 +554,20 @@ video {
   --tw-contain-style:  ;
 }
 
-.container {
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .container {
-    max-width: 640px;
-  }
-}
-
-@media (min-width: 768px) {
-  .container {
-    max-width: 768px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    max-width: 1024px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .container {
-    max-width: 1280px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .container {
-    max-width: 1536px;
-  }
-}
-
-.justify-center {
-  justify-content: center;
-}
-
 .bg-radial-green-yellow {
   background-image: radial-gradient(circle, #00FF00, #0D2AEE);
 }
 
-.text-center {
-  text-align: center;
+.position-new-card {
+  position: absolute;
+  left: 507px;
+  top: 403px;
+}
+
+@player components {
+  .card {
+    position: absolute;
+    left: 507px;
+    top: 403px;
+  }
 }

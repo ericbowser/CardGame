@@ -1,3 +1,17 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.position-new-card {
+    position: absolute;
+    left: 507px;
+    top: 403px;
+}
+
+@player components {
+    .card {
+        position: absolute;
+        left: 507px;
+        top: 403px;
+    }
+}

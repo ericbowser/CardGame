@@ -2,12 +2,12 @@
 import Card from "./Card";
 import useGameLog from "./GameLog";
 
-const BlackJack = () => {
+const Deck = () => {
     const [deck, setDeck] = useState([]);
     const [shuffledDeck, setShuffledDeck] = useState([]);
     const [isDeckShuffled, setIsDeckShuffled] = useState(false);
 
-    const {logs, addLog, printLog} = useGameLog([]);
+    const {logs, addLog, clearLogs} = useGameLog([]);
 
     const importAllImages = async () => {
         const modulePaths = import.meta.glob('../src/assets/images/*.{png,jpg,jpeg}');
@@ -62,22 +62,11 @@ const BlackJack = () => {
         setDeck([]);
         setShuffledDeck([]);
         setIsDeckShuffled(false);
-    }
-
-    function extractCardValue(url, cardValue) {
-        const regex = new RegExp(cardValue, 'i');  // case-insensitive search
-        const matched = url?.match(regex);  // returns an array if match is found, otherwise null
-        return matched !== null && matched.length > 0;
-    }
-
-    function blackJack(card1, card2) {
-        const blackJack = card1 + card2;
-        console.log(blackJack);
-        return blackJack === 21;
+        clearLogs();
     }
 
     return (
-        <div>
+        <div className={'container'}>
             <section className={'flex'}>
                 <button
                     className={'py-2 px-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
@@ -91,7 +80,7 @@ const BlackJack = () => {
                 </button>
             </section>
             <div className={'flex text-center justify-center m-10'}>
-                <p className={'w-48'}>
+                <p className={'w-96 m-20'}>
                     Game Log
                     {logs.map((entry, index) => (
                         <div key={index} className={'text-white'}>
@@ -99,10 +88,10 @@ const BlackJack = () => {
                         </div>
                     ))}
                 </p>
-                <div className={'flex flex-col container'}>
+                <div className={'flex '}>
                     {isDeckShuffled
                         ? (
-                            <Card shuffledDeck={shuffledDeck}/>
+                            <Card shuffledDeck={shuffledDeck} addLog={addLog}/>
                         )
                         : null}
                 </div>
@@ -111,4 +100,4 @@ const BlackJack = () => {
     )
 }
 
-export default BlackJack;
+export default Deck;
