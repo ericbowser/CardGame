@@ -57,7 +57,7 @@ const Deck = () => {
             setIsDeckShuffled(true);
         }
     }
-    
+
     function clearBoardState() {
         setDeck([]);
         setShuffledDeck([]);
@@ -66,29 +66,31 @@ const Deck = () => {
     }
 
     return (
-        <div className={'container'}>
-            <section className={'flex'}>
-                <button
-                    className={'py-2 px-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                    onClick={shuffleDeck}>
-                    Shuffle and Deal
-                </button>
-                <button
-                    className={'py-2 px-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                    onClick={clearBoardState}>
-                    Clear Board State
-                </button>
-            </section>
-            <div className={'flex text-center justify-center m-10'}>
-                <p className={'w-96 m-20'}>
-                    Game Log
-                    {logs.map((entry, index) => (
-                        <div key={index} className={'text-white'}>
-                            {entry}
-                        </div>
-                    ))}
-                </p>
-                <div className={'flex '}>
+        <div className={'container-sm m-20'}>
+            <div className={'flex'}>
+                <div>
+                    <button
+                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                        style={{lineHeight: '1rem'}}
+                        onClick={shuffleDeck}>
+                        Shuffle and Deal
+                    </button>
+                    <button
+                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                        style={{lineHeight: '1rem'}}
+                        onClick={clearBoardState}>
+                        Clear Board State
+                    </button>
+                    <p className={'w-80'}>
+                        Game Log
+                        {logs.map((entry, index) => (
+                            <div key={index} className={'text-white'}>
+                                {entry}
+                            </div>
+                        ))}
+                    </p>
+                </div>
+                <div>
                     {isDeckShuffled
                         ? (
                             <Card shuffledDeck={shuffledDeck} addLog={addLog}/>

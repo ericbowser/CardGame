@@ -1,6 +1,6 @@
 ﻿import React, {useEffect, useState} from "react";
 import facedown from "../src/assets/facedown4.jpg";
-import Utils from '../src/Utils';
+import {FaceValues, SmallValues, Who, Action} from '../src/Utils';
 
 function Card({
                   shuffledDeck = [], addLog = () => {
@@ -14,7 +14,25 @@ function Card({
     const [playerBlackJack, setPlayerBlackJack] = useState(null);
     const [playerPhase, setPlayerPhase] = useState(false);
     const [hitOrStay, setHitOrStay] = useState(null);
-    const [playerHits, setPlayerHits] = useState([]);
+    const [playerHits, setPlayerHits] = useState(null);
+
+    /*
+        const [playerHits, setPlayerHits] = useState([]);
+    */
+
+    useEffect(() => {
+    }, [playerPhase]);
+
+    useEffect(() => {
+        if (playerCards.length === 0 && dealerCards.length === 0) {
+            setCards();
+        }
+        // Check for initial BlackJack
+        if (playerCards.length >= 2 && dealerCards.length >= 2) {
+            checkForBlackJack(dealerCards, Who.Dealer);
+            checkForBlackJack(playerCards, Who.Player);
+        }
+    }, [playerCards, dealerCards, cardsSet, holeCard, dealerBlackJack, playerBlackJack]);
 
     const setCards = () => {
         addLog('Dealing cards...');
@@ -48,65 +66,104 @@ function Card({
             setCardsSet(true);
         }
     }
-    
-    const checkPlayerBust = () => {
-        playerCards.map((card, index) => {
-            Utils.forEach(x => {
-                const hasValue = card.includes(x["10"]);
-                console.log(hasValue);
-            })
-       /*     const king = card.includes(Utils.find(x => x.king.toString() === x));
-            const queen = card.includes(Utils.find(x => x.queen.toString()) === x);
-            const ten = card.includes(Utils.find(x => x.ten.toString()) === x);*/
+
+    const checkPlayerBust = (who = '') => {
+        let handTotal;
+        let cards = [];
+        if (who === Who.Player) {
+            cards = playerCards;
+            const hasFace = checkFace(playerCards);
+            if (hasFace) {
+                handTotal = 10;
+            } else {
+                handTotal = 0;
+            }
             
-/*
-            const jack = card.includes(Utils.jack);
-            const jack = card.includes(Utils.jack);
-            const jack = card.includes(Utils.jack);
-            const jack = card.includes(Utils.jack);
-            const jack = card.includes(Utils.jack);
-            const jack = card.includes(Utils.jack);
-*/
-        })
-    }
-
-    const hitOrStayChoice = (choice = "") => {
-        if (choice === "Hit") {
-            addLog("Player hits");
-            const card = shuffledDeck.pop();
-            playerCards.push(card);
-            setPlayerCards(playerCards);
-            const newPlayerHits = playerHits + 1;
-            setPlayerHits(newPlayerHits);
-            checkPlayerBust();
-        } else if (choice === "Stay") {
-            addLog("Player Stays");
-            setPlayerPhase(false);
+            checkNumberCards(playerCards, handTotal);
         }
     }
+    
+    function checkNumberCards(cards = [], handTotal = 0) {
+        playerCards.forEach(card => {
+            const regex = /\d+/g;
+            const numbers = card.match(regex);
+            
+            if (numbers && numbers.length > 0) {
+                const parsed = parseInt(numbers[0]);
+                SmallValues.forEach(numberCard => {
+                   if (parsed === parseInt(numberCard)) {
+                       handTotal += parsed;
+                   } 
+                });
+                handTotal += parsed;
+            }
+        });
+        
+        console.log(handTotal);
+    }
 
-    useEffect(() => {
-    }, [playerPhase]);
+    const hitOrStayChoice = (who = '', choice = '') => {
+        if (who === Who.Player) {
+            if (choice === Action.Hit) {
+                addLog("Player hits");
+                const card = shuffledDeck.pop();
+                playerCards.push(card);
+                setPlayerCards(playerCards);
+                const newPlayerHits = playerHits + 1;
+                setPlayerHits(newPlayerHits);
+                checkPlayerBust(Who.Player);
+            } else if (choice === Action.Stay) {
+                addLog("Player Stays");
+                setPlayerPhase(false);
+            }
+        }
+    }
 
-    useEffect(() => {
-        if (playerCards.length === 0 && dealerCards.length === 0) {
-            setCards();
+    function checkFace(cards = []) {
+        let exists = false;
+        cards.forEach(x => {
+            if (x.includes('10')) {
+                exists = true;
+            } else if (x.includes('queen')) {
+                exists = true;
+            } else if (x.includes('king')) {
+                exists = true;
+            } else if (x.includes('jack')) {
+                exists = true;
+            }
+        });
+        return exists;
+    }
+
+    function checkForBlackJack(cards = [], who = '') {
+        addLog('Checking for BlackJack...');
+        const ace = cards.find(y => y.includes('ace'));
+        if (ace?.length > 0) {
+            const isFaceCard = checkFace(cards);
+            if (isFaceCard) {
+                if (who === Who.Dealer) {
+                    setDealerBlackJack("BlackJack");
+                }
+                if (who === Who.Player) {
+                    setPlayerBlackJack("BlackJack");
+                }
+                addLog(`${who} BlackJack!`);
+            } else {
+                setPlayerPhase(true);
+                setCardsSet(true);
+            }
+        } else {
+            setPlayerPhase(true);
+            setCardsSet(true);
         }
-        if (playerCards.length === 2 && dealerCards.length === 2) {
-            checkForBlackJack(dealerCards, "Dealer");
-            checkForBlackJack(playerCards, "Player");
-        }
-       /* if (playerPhase && blackJack !== "BlackJack") {
-            addLog("Play phase. Asking to hit or stay..");
-        }*/
-    }, [playerCards, dealerCards, cardsSet, holeCard, dealerBlackJack, playerBlackJack]);
+    }
 
     const getPlayerCards = () => {
         let left;
         let top;
         if (playerHits === 1) {
             left = 507;
-            top = 403;
+            top = 503;
         }
         if (playerHits > 1) {
             left += 20;
@@ -144,7 +201,7 @@ function Card({
                     <div key={`${card}${index}`}
                          className={'m-2 w-32 h-48 bg-radial-green-yellow text-white rounded-md flex items-center justify-center'}>
                         <img
-                            src={isHole && dealerBlackJack !== "BlackJack" ? facedown : card}
+                            src={card}
                             alt={'images'}
                             width={120}
                         />
@@ -154,46 +211,8 @@ function Card({
         )
     }
 
-    function checkFace(cards = []) {
-        let exists = false;
-        cards.forEach(x => {
-            if (x.includes('10')) {
-                exists = true;
-            } else if (x.includes('queen')) {
-                exists = true;
-            } else if (x.includes('king')) {
-                exists = true;
-            } else if (x.includes('jack')) {
-                exists = true;
-            }
-        });
-        return exists;
-    }
-
-    function checkForBlackJack(cards = [], who = '') {
-        addLog('Checking for BlackJack...');
-        const ace = cards.find(y => y.includes('ace'));
-        if (ace?.length > 0) {
-            const isFaceCard = checkFace(cards);
-            if (isFaceCard) {
-                if (who === 'Dealer') {
-                    setDealerBlackJack("BlackJack");
-                } else {
-                    setPlayerBlackJack("BlackJack");
-                }
-                addLog(`${who} BlackJack!`);
-            } else {
-                setPlayerPhase(true);
-                setCardsSet(true);
-            }
-        } else {
-            setPlayerPhase(true);
-            setCardsSet(true);
-        }
-    }
-
     return (
-        <div className={'ml-20'}>
+        <div>
             <div className="mb-10 p-5">
                 <h2 className="text-2xl font-bold mb-2 text-left justify-center">
                     Dealer's Hand
@@ -214,13 +233,13 @@ function Card({
             {playerPhase && (
                 <div>
                     <button
-                        className={'py-2 px-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                        onClick={() => hitOrStayChoice("Hit")}>
+                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                        onClick={() => hitOrStayChoice(Who.Player, "Hit")}>
                         Hit
                     </button>
                     <button
-                        className={'py-2 px-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                        onClick={() => hitOrStayChoice("Stay")}>
+                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                        onClick={() => hitOrStayChoice(Who.Player, "Stay")}>
                         Stay
                     </button>
                 </div>

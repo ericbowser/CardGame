@@ -1,10 +1,13 @@
-﻿const deckValues = [
+﻿export const FaceValues = [
     {1: 'ace_as_one'},
     {11: 'ace_as_eleven'},
     {10: "10"},
     {10: 'jack'},
     {10: 'queen'},
-    {10: 'king'},
+    {10: 'king'}
+];
+
+export const SmallValues = [
     {1: '1'},
     {2: '2'},
     {3: '3'},
@@ -16,4 +19,12 @@
     {9: '9'}
 ];
 
-export default deckValues;
+export const Who = {
+    Dealer: "Dealer",
+    Player: "Player"
+}
+
+export const Action = {
+    Hit: "Hit",
+    Stay: "Stay"
+}
