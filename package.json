@@ -41,7 +41,8 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.38",
-    "vite": "^5.2.11"
+    "vite": "^5.2.11",
+    "@rollup/rollup-linux-x64-gnu": "4.6.1"
   },
   "author": "E.R.B.",
   "license": "MIT"
