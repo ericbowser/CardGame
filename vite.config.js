@@ -14,5 +14,5 @@ export default defineConfig({
             enforce: 'post',
         },
     ],
-    assetsInclude: ['**/*.docx', '**/src/assets/images/*.{png}', '**/src/assets/*.{png|jpg}']
+    assetsInclude: ['**/*.docx', '**/src/assets/images/*.{png}', '**/src/assets/*.{png|jpg}','**/src/assets/*.{js}']
 })

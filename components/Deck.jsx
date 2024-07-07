@@ -10,7 +10,7 @@ const Deck = () => {
     const {logs, addLog, clearLogs} = useGameLog([]);
 
     const importAllImages = async () => {
-        const modulePaths = import.meta.glob('../src/assets/images/*.{png,jpg,jpeg}');
+        const modulePaths = import.meta.glob('../src/assets/images/*.{png,jpg,jpeg,js}');
         const imagePromises = Object.keys(modulePaths).map((path) => modulePaths[path]());
 
         // Resolve all promises to get the actual image paths
