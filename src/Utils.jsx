@@ -7,17 +7,7 @@
     {10: 'king'}
 ];
 
-export const SmallValues = [
-    {1: '1'},
-    {2: '2'},
-    {3: '3'},
-    {4: '4'},
-    {5: '5'},
-    {6: '6'},
-    {7: '7'},
-    {8: '8'},
-    {9: '9'}
-];
+export const SmallValues = [1,2,3,4,5,6,7,8,9];
 
 export const Who = {
     Dealer: "Dealer",
@@ -27,4 +17,11 @@ export const Who = {
 export const Action = {
     Hit: "Hit",
     Stay: "Stay"
+}
+
+export const GameState = {
+    CardsDealt: "Cards Dealt",
+    PlayerPhase: "Player Phase",
+    DealerPhase: "Dealer Phase",
+    GameConcluded: "Game Concluded"
 }

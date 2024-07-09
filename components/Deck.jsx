@@ -1,11 +1,14 @@
 ﻿import React, {useEffect, useState} from 'react';
 import Card from "./Card";
 import useGameLog from "./GameLog";
+import {GameState} from "../src/Utils";
 
 const Deck = () => {
     const [deck, setDeck] = useState([]);
     const [shuffledDeck, setShuffledDeck] = useState([]);
     const [isDeckShuffled, setIsDeckShuffled] = useState(false);
+    const [alertMessage, setAlertMessage] = useState(null);
+    const [gameState, setGameState] = useState(null);
 
     const {logs, addLog, clearLogs} = useGameLog([]);
 
@@ -25,10 +28,17 @@ const Deck = () => {
     }
 
     useEffect(() => {
+        if (alertMessage) {
+            setGameState(GameState.GameConcluded);
+        }
+        if (gameState) {
+            addLog(gameState);
+        }
+    }, [alertMessage, gameState])
+
+    useEffect(() => {
         if (deck?.length === 0) {
-            getImages().then(images => {
-                addLog('Importing assets..');
-            });
+            getImages().then(r => console.log('Importing assets...'));
         }
     }, [deck]);
 
@@ -62,41 +72,56 @@ const Deck = () => {
         setDeck([]);
         setShuffledDeck([]);
         setIsDeckShuffled(false);
+        setGameState(null);
+        setAlertMessage(null);
         clearLogs();
     }
 
     return (
-        <div className={'container-sm m-20'}>
-            <div className={'flex'}>
-                <div>
-                    <button
-                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                        style={{lineHeight: '1rem'}}
-                        onClick={shuffleDeck}>
-                        Shuffle and Deal
-                    </button>
-                    <button
-                        className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
-                        style={{lineHeight: '1rem'}}
-                        onClick={clearBoardState}>
-                        Clear Board State
-                    </button>
-                    <p className={'w-80'}>
-                        Game Log
-                        {logs.map((entry, index) => (
-                            <div key={index} className={'text-white'}>
-                                {entry}
-                            </div>
-                        ))}
-                    </p>
+        <div>
+
+            <div className={'container-sm m-20'}>
+
+                <div className={'flex'}>
+                    <div>
+                        <button
+                            className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                            style={{lineHeight: '1rem'}}
+                            onClick={shuffleDeck}>
+                            Shuffle and Deal
+                        </button>
+                        <button
+                            className={'p-2 m-2 bg-black text-white rounded cursor-pointer text-center justify-center'}
+                            style={{lineHeight: '1rem'}}
+                            onClick={clearBoardState}>
+                            Clear Board State
+                        </button>
+                        <p className={'w-80'}>
+                            Game Log
+                            {logs.map((entry, index) => (
+                                <div key={index} className={'text-white'}>
+                                    {entry}
+                                </div>
+                            ))}
+                        </p>
+                    </div>
+                    <div>
+                        {isDeckShuffled
+                            ? (
+                                <Card
+                                    shuffledDeck={shuffledDeck}
+                                    addLog={addLog}
+                                    setAlertMessage={setAlertMessage}
+                                    setGameState={setGameState}
+                                    gameState={gameState}
+                                />
+                            )
+                            : null}
+                    </div>
                 </div>
-                <div>
-                    {isDeckShuffled
-                        ? (
-                            <Card shuffledDeck={shuffledDeck} addLog={addLog}/>
-                        )
-                        : null}
-                </div>
+                {alertMessage &&
+                    <div className={'text-2xl text-white shadow-2xl shadow-amber-600'}>{alertMessage}</div>
+                }
             </div>
         </div>
     )
