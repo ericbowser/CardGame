@@ -1,23 +1,21 @@
-// src/App.jsx
 import React from 'react';
-import { GameProvider } from './GameContext';
-import GameBoard from '../components/GameBoard';
+import Deck from "../components/Deck";
 import '../style/output.css';
 
 const App = () => {
   return (
     <div className="min-h-screen bg-radial-green-yellow p-4">
-      <header className="mb-6 text-center">
-        <h1 className="text-4xl font-bold text-white drop-shadow-lg">Blackjack</h1>
-        <p className="text-white text-lg">Try your luck against the dealer!</p>
+      <header className="container mx-auto py-8 text-center">
+        <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">Blackjack</h1>
+        <p className="text-xl text-white opacity-80">Try your luck against the dealer!</p>
       </header>
 
-      <GameProvider>
-        <GameBoard />
-      </GameProvider>
+      <main className="container mx-auto py-4">
+        <Deck />
+      </main>
 
-      <footer className="mt-8 text-center text-white text-sm opacity-70">
-        <p>© 2025 Blackjack Game | Developed by You</p>
+      <footer className="container mx-auto mt-12 py-4 text-center text-white opacity-50 text-sm">
+        <p>© {new Date().getFullYear()} Blackjack Card Game - Built with React & TailwindCSS</p>
       </footer>
     </div>
   );

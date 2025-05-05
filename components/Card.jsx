@@ -1,12 +1,21 @@
 ﻿import React, { useEffect, useState } from "react";
+import facedown from "../src/assets/facedown4.jpg";
 import { Who, Action, GameState } from '../src/Utils';
 
-function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameState }) {
+function Card({
+                  shuffledDeck = [],
+                  addLog,
+                  setAlertMessage,
+                  setGameState,
+                  gameState,
+                  setWinner
+              }) {
     // Card state
     const [playerCards, setPlayerCards] = useState([]);
     const [dealerCards, setDealerCards] = useState([]);
     const [cardsSet, setCardsSet] = useState(false);
     const [holeCard, setHoleCard] = useState(null);
+    const [showHoleCard, setShowHoleCard] = useState(false);
 
     // Game state
     const [playerBlackJack, setPlayerBlackJack] = useState(false);
@@ -15,36 +24,69 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
     const [dealerBust, setDealerBust] = useState(false);
     const [playerCount, setPlayerCount] = useState(0);
     const [dealerCount, setDealerCount] = useState(0);
-    const [winner, setWinner] = useState(null);
+    // Use local winner state when setWinner is not provided
+    const [localWinner, setLocalWinner] = useState(null);
+
+    // Determine which setter to use
+    const updateWinner = (value) => {
+        if (setWinner) {
+            setWinner(value);
+        }
+        setLocalWinner(value);
+    };
     const [push, setPush] = useState(false);
-    const [showHoleCard, setShowHoleCard] = useState(false);
     const [roundOver, setRoundOver] = useState(false);
 
-    // Betting state (we'll add this in the next iteration)
-    const [playerBet, setPlayerBet] = useState(0);
-    const [playerChips, setPlayerChips] = useState(1000);
+    // Player actions
+    const [playerHits, setPlayerHits] = useState(0);
 
-    // Determine outcome when player or dealer busts
+    // Betting state (to be connected with a betting system later)
+    const [playerChips, setPlayerChips] = useState(1000);
+    const [currentBet, setCurrentBet] = useState(0);
+
+    // Auto-play dealer's turn according to house rules
+    useEffect(() => {
+        if (gameState === GameState.DealerPhase && !dealerBlackJack && !playerBlackJack && !playerBust) {
+            setShowHoleCard(true);
+
+            // Dealer must hit on 16 or less, stand on 17 or more
+            if (dealerCount < 17) {
+                // Use setTimeout to create a slight delay for better UX
+                const timer = setTimeout(() => {
+                    autoPlayDealer();
+                }, 1000);
+
+                return () => clearTimeout(timer);
+            } else {
+                addLog(`Dealer stands with ${dealerCount}.`);
+                compareScores();
+            }
+        }
+    }, [gameState, dealerCount]);
+
+    // Handle bust scenarios
     useEffect(() => {
         if (playerBust && !dealerBust) {
-            setWinner(Who.Dealer);
+            updateWinner(Who.Dealer);
+            setAlertMessage("Player busts! Dealer wins.");
             addLog("Player busts! Dealer wins.");
             setGameState(GameState.GameConcluded);
             setRoundOver(true);
         }
         if (!playerBust && dealerBust) {
-            setWinner(Who.Player);
+            updateWinner(Who.Player);
+            setAlertMessage("Dealer busts! Player wins.");
             addLog("Dealer busts! Player wins.");
             setGameState(GameState.GameConcluded);
             setRoundOver(true);
         }
-    }, [dealerBust, playerBust, addLog, setGameState]);
+    }, [dealerBust, playerBust]);
 
     // Handle BlackJack scenarios
     useEffect(() => {
         if (dealerBlackJack && playerBlackJack) {
             setPush(true);
-            setWinner("Push");
+            updateWinner("Push");
             setAlertMessage("Push! Both have BlackJack!");
             addLog("Push! Both player and dealer have BlackJack.");
             setGameState(GameState.GameConcluded);
@@ -62,35 +104,12 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
             setGameState(GameState.GameConcluded);
             setRoundOver(true);
         }
-    }, [dealerBlackJack, playerBlackJack, addLog, setAlertMessage, setGameState]);
+    }, [dealerBlackJack, playerBlackJack]);
 
-    // Compare scores at the end of the round
+    // Initial card setup
     useEffect(() => {
-        if (gameState === GameState.GameConcluded && !roundOver && !playerBust && !dealerBust && !playerBlackJack && !dealerBlackJack) {
-            setShowHoleCard(true);
-
-            if (playerCount > dealerCount) {
-                setWinner(Who.Player);
-                setAlertMessage(`Player wins with ${playerCount}!`);
-                addLog(`Player wins with ${playerCount} against dealer's ${dealerCount}.`);
-            } else if (dealerCount > playerCount) {
-                setWinner(Who.Dealer);
-                setAlertMessage(`Dealer wins with ${dealerCount}!`);
-                addLog(`Dealer wins with ${dealerCount} against player's ${playerCount}.`);
-            } else {
-                setPush(true);
-                setWinner("Push");
-                setAlertMessage(`Push! Both have ${playerCount}.`);
-                addLog(`Push! Both have ${playerCount}.`);
-            }
-            setRoundOver(true);
-        }
-    }, [gameState, roundOver, playerBust, dealerBust, playerBlackJack, dealerBlackJack, playerCount, dealerCount, addLog, setAlertMessage]);
-
-    // Deal initial cards
-    useEffect(() => {
-        if (playerCards.length === 0 && dealerCards.length === 0) {
-            setCards();
+        if (playerCards.length === 0 && dealerCards.length === 0 && gameState === GameState.CardsDealt) {
+            dealInitialCards();
         }
 
         // Check for initial BlackJack
@@ -99,47 +118,23 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
             addLog('Checking for BlackJack...');
 
             // Calculate initial hands
-            setPlayerHand();
             setDealerHand();
+            setPlayerHand();
 
             // Check for blackjack
-            checkForBlackJack(playerCards, Who.Player);
             checkForBlackJack(dealerCards, Who.Dealer);
+            checkForBlackJack(playerCards, Who.Player);
 
             // If no blackjack, continue to player phase
             if (!playerBlackJack && !dealerBlackJack) {
+                addLog("No BlackJack. Player's turn.");
                 setGameState(GameState.PlayerPhase);
             }
         }
-    }, [playerCards, dealerCards, cardsSet]);
+    }, [playerCards, dealerCards, cardsSet, gameState]);
 
-    // Show hole card when dealer's turn begins or game concludes
-    useEffect(() => {
-        if (gameState === GameState.DealerPhase || gameState === GameState.GameConcluded) {
-            setShowHoleCard(true);
-        }
-    }, [gameState]);
-
-    // Auto-play dealer's turn according to house rules
-    useEffect(() => {
-        if (gameState === GameState.DealerPhase && !dealerBlackJack && !playerBlackJack && !playerBust) {
-            // Dealer must hit on 16 or less, stand on 17 or more
-            if (dealerCount < 17) {
-                // Use setTimeout to create a slight delay for better UX
-                const timer = setTimeout(() => {
-                    hitOrStayDealer(Action.Hit);
-                }, 1000);
-
-                return () => clearTimeout(timer);
-            } else {
-                addLog(`Dealer stands with ${dealerCount}.`);
-                setGameState(GameState.GameConcluded);
-            }
-        }
-    }, [gameState, dealerCount, dealerBlackJack, playerBlackJack, playerBust]);
-
-    // Setup initial cards
-    const setCards = () => {
+    // Deal initial cards
+    const dealInitialCards = () => {
         if (playerCards.length === 0 && dealerCards.length === 0 && !cardsSet && shuffledDeck.length >= 4) {
             let player = [];
             let dealer = [];
@@ -155,46 +150,38 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
             dealer.push(dealerCard1);
             dealer.push(dealerCard2);
 
-            setPlayerCards(player);
             setDealerCards(dealer);
+            setPlayerCards(player);
             setHoleCard(dealerCard2);
             setCardsSet(true);
 
-            addLog(`Player receives ${getCardName(playerCard1)} and ${getCardName(playerCard2)}`);
-            addLog(`Dealer shows ${getCardName(dealerCard1)} and has one face-down card`);
+            addLog(`Player receives cards`);
+            addLog(`Dealer shows one card and has one face-down card`);
         }
     };
 
-    // Get readable card name from path
-    const getCardName = (cardPath) => {
-        if (!cardPath) return 'unknown';
-
-        const fileName = cardPath.split('/').pop();
-        return fileName.replace('.png', '').replace('.jpg', '').replace('_', ' ');
-    };
-
-    // Calculate dealer's hand value
+    // Calculate dealer's hand value - improved version
     function setDealerHand() {
         let total = 0;
         let aces = 0;
 
         dealerCards.forEach(card => {
-            const cardName = getCardName(card);
-
-            if (cardName.includes('ace')) {
+            if (card.includes('ace')) {
                 aces++;
-            } else if (cardName.includes('king') || cardName.includes('queen') || cardName.includes('jack') || cardName.includes('10')) {
+            } else if (card.includes('king') || card.includes('queen') || card.includes('jack')) {
+                total += 10;
+            } else if (card.includes('10')) {
                 total += 10;
             } else {
                 // Extract number from card name
-                const match = cardName.match(/^(\d+)/);
-                if (match) {
-                    total += parseInt(match[0]);
+                const match = card.match(/(\d+)_of/);
+                if (match && match[1]) {
+                    total += parseInt(match[1]);
                 }
             }
         });
 
-        // Add aces (1 or 11 each)
+        // Add aces (1 or 11 each) - always add aces last for proper counting
         for (let i = 0; i < aces; i++) {
             if (total + 11 <= 21) {
                 total += 11;
@@ -207,32 +194,31 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
 
         if (total > 21) {
             setDealerBust(true);
-            setAlertMessage("Dealer Busts!");
         }
     }
 
-    // Calculate player's hand value
+    // Calculate player's hand value - improved version
     function setPlayerHand() {
         let total = 0;
         let aces = 0;
 
         playerCards.forEach(card => {
-            const cardName = getCardName(card);
-
-            if (cardName.includes('ace')) {
+            if (card.includes('ace')) {
                 aces++;
-            } else if (cardName.includes('king') || cardName.includes('queen') || cardName.includes('jack') || cardName.includes('10')) {
+            } else if (card.includes('king') || card.includes('queen') || card.includes('jack')) {
+                total += 10;
+            } else if (card.includes('10')) {
                 total += 10;
             } else {
                 // Extract number from card name
-                const match = cardName.match(/^(\d+)/);
-                if (match) {
-                    total += parseInt(match[0]);
+                const match = card.match(/(\d+)_of/);
+                if (match && match[1]) {
+                    total += parseInt(match[1]);
                 }
             }
         });
 
-        // Add aces (1 or 11 each)
+        // Add aces (1 or 11 each) - always add aces last for proper counting
         for (let i = 0; i < aces; i++) {
             if (total + 11 <= 21) {
                 total += 11;
@@ -245,39 +231,40 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
 
         if (total > 21) {
             setPlayerBust(true);
-            setAlertMessage("Player Busts!");
         }
     }
 
-    // Dealer actions (hit or stay)
-    const hitOrStayDealer = (choice = '') => {
-        if (choice === Action.Hit) {
+    // Automated dealer play
+    const autoPlayDealer = () => {
+        // Show the hole card when dealer plays
+        setShowHoleCard(true);
+
+        if (dealerCount < 17) {
             addLog("Dealer hits");
             const card = shuffledDeck.pop();
             const newDealerCards = [...dealerCards, card];
             setDealerCards(newDealerCards);
-            addLog(`Dealer draws ${getCardName(card)}`);
 
-            // Recalculate dealer's hand after new card
+            // Recalculate dealer's hand
             setTimeout(() => {
                 setDealerHand();
             }, 200);
-        } else if (choice === Action.Stay) {
+        } else {
             addLog("Dealer stays");
-            setGameState(GameState.GameConcluded);
+            compareScores();
         }
     };
 
-    // Player actions (hit or stay)
-    const hitOrStayPlayer = (choice = '') => {
+    // Player actions
+    const hitOrStayPlayer = (choice) => {
         if (choice === Action.Hit) {
             addLog("Player hits");
             const card = shuffledDeck.pop();
             const newPlayerCards = [...playerCards, card];
             setPlayerCards(newPlayerCards);
-            addLog(`Player draws ${getCardName(card)}`);
+            setPlayerHits(playerHits + 1);
 
-            // Recalculate player's hand after new card
+            // Recalculate player's hand
             setTimeout(() => {
                 setPlayerHand();
             }, 200);
@@ -287,24 +274,45 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
         }
     };
 
+    // Compare scores at the end of the round
+    const compareScores = () => {
+        if (!playerBust && !dealerBust) {
+            if (playerCount > dealerCount) {
+                setWinner(Who.Player);
+                setAlertMessage(`Player wins with ${playerCount}!`);
+                addLog(`Player wins with ${playerCount} vs dealer's ${dealerCount}.`);
+            } else if (dealerCount > playerCount) {
+                setWinner(Who.Dealer);
+                setAlertMessage(`Dealer wins with ${dealerCount}!`);
+                addLog(`Dealer wins with ${dealerCount} vs player's ${playerCount}.`);
+            } else {
+                setPush(true);
+                setWinner("Push");
+                setAlertMessage(`Push! Both have ${playerCount}!`);
+                addLog(`Push! Both have ${playerCount}.`);
+            }
+        }
+
+        setGameState(GameState.GameConcluded);
+    };
+
     // Check for blackjack (Ace + 10-value card)
-    function checkForBlackJack(cards = [], who = '') {
+    function checkForBlackJack(cards, who) {
         if (cards.length !== 2) return false;
 
         // Check if one card is an ace
-        const hasAce = cards.some(card => getCardName(card).includes('ace'));
+        const hasAce = cards.some(card => card.includes('ace'));
 
         // Check if one card is a 10-value card (10, J, Q, K)
-        const hasTenValue = cards.some(card => {
-            const name = getCardName(card);
-            return name.includes('10') ||
-              name.includes('jack') ||
-              name.includes('queen') ||
-              name.includes('king');
+        const hasFaceCard = cards.some(card => {
+            return card.includes('10') ||
+              card.includes('jack') ||
+              card.includes('queen') ||
+              card.includes('king');
         });
 
         // If both conditions are true, it's a blackjack
-        if (hasAce && hasTenValue) {
+        if (hasAce && hasFaceCard) {
             if (who === Who.Dealer) {
                 setDealerBlackJack(true);
             } else if (who === Who.Player) {
@@ -316,44 +324,69 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
         return false;
     }
 
-    // Render player cards
-    const getPlayerCards = () => {
-        return playerCards.map((card, index) => {
-            // Basic layout for now - can be enhanced with better positioning
-            const offset = index * 30;
-            return (
-              <div
-                key={`player-card-${index}`}
-                className="relative inline-block m-1"
-                style={{ marginLeft: index > 0 ? `-80px` : '0' }}
-              >
-                  <img
-                    src={card}
-                    alt={`Player card ${index + 1}`}
-                    className="w-32 h-48 rounded-lg shadow-lg"
-                  />
-              </div>
-            );
-        });
+    // Start a new round
+    const startNewRound = () => {
+        // Reset all game state
+        setPlayerCards([]);
+        setDealerCards([]);
+        setCardsSet(false);
+        setHoleCard(null);
+        setShowHoleCard(false);
+        setPlayerBlackJack(false);
+        setDealerBlackJack(false);
+        setPlayerBust(false);
+        setDealerBust(false);
+        setPlayerCount(0);
+        setDealerCount(0);
+        setWinner(null);
+        setPush(false);
+        setRoundOver(false);
+        setPlayerHits(0);
+        setCurrentBet(0);
+
+        // Reset game state
+        setGameState(null);
+        addLog("Ready for a new round");
     };
 
-    // Render dealer cards 
+    // Render player cards with responsive layout
+    const getPlayerCards = () => {
+        return playerCards.map((card, index) => (
+          <div
+            key={`player-card-${index}`}
+            className="inline-block relative transition-all duration-300 rounded-md"
+            style={{
+                marginLeft: index > 0 ? `-60px` : '0',
+                zIndex: index
+            }}
+          >
+              <img
+                src={card}
+                alt={`Player card ${index + 1}`}
+                className="w-32 h-auto rounded-md shadow-lg"
+              />
+          </div>
+        ));
+    };
+
+    // Render dealer cards with responsive layout
     const getDealerCards = () => {
         return dealerCards.map((card, index) => {
-            // For the second card (hole card), show face down unless showHoleCard is true
             const isHoleCard = index === 1;
-            const offset = index * 30;
 
             return (
               <div
                 key={`dealer-card-${index}`}
-                className="relative inline-block m-1"
-                style={{ marginLeft: index > 0 ? `-80px` : '0' }}
+                className="inline-block relative transition-all duration-300 rounded-md"
+                style={{
+                    marginLeft: index > 0 ? `-60px` : '0',
+                    zIndex: index
+                }}
               >
                   <img
-                    src={isHoleCard && !showHoleCard ? '/src/assets/facedown4.jpg' : card}
+                    src={isHoleCard && !showHoleCard ? facedown : card}
                     alt={`Dealer card ${index + 1}`}
-                    className="w-32 h-48 rounded-lg shadow-lg"
+                    className="w-32 h-auto rounded-md shadow-lg"
                   />
               </div>
             );
@@ -361,54 +394,65 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
     };
 
     return (
-      <div className="w-full max-w-4xl mx-auto">
-          {/* Game info section */}
-          <div className="mb-6 flex justify-between items-center">
+      <div className="w-full max-w-4xl mx-auto p-4">
+          {/* Game status */}
+          <div className="mb-4 flex justify-between items-center">
               <div>
-                  <h2 className="text-xl font-bold">Player: ${playerChips}</h2>
-                  <p>Current bet: ${playerBet}</p>
+                    <span className="text-lg text-white font-semibold">
+                        Player: ${playerChips}
+                    </span>
               </div>
 
-              {winner && (
-                <div className={`text-center text-xl font-bold p-2 rounded-lg ${
-                  winner === Who.Player ? 'bg-green-600 text-white' :
-                    winner === Who.Dealer ? 'bg-red-600 text-white' :
-                      'bg-yellow-400 text-black'
-                }`}>
-                    {winner === "Push" ? "Push!" : `${winner} Wins!`}
+              {localWinner && gameState === GameState.GameConcluded && (
+                <div className="text-center p-2 bg-opacity-80 rounded">
+                        <span className={`text-2xl font-bold ${
+                          (localWinner || winner) === Who.Player ? 'text-green-400' :
+                            (localWinner || winner) === Who.Dealer ? 'text-red-400' :
+                              'text-yellow-400'
+                        }`}>
+                            {(localWinner || winner) === "Push" ? "Push!" : `${(localWinner || winner)} Wins!`}
+                        </span>
                 </div>
               )}
 
-              <div className="text-right">
-                  <p className="text-lg font-semibold">Dealer: {showHoleCard ? dealerCount : '?'}</p>
-                  <p className="text-lg font-semibold">Player: {playerCount}</p>
+              <div>
+                    <span className="text-lg text-white font-semibold">
+                        Dealer: {showHoleCard ? dealerCount : '?'}
+                    </span>
+                  <span className="mx-4 text-lg text-white font-semibold">
+                        Player: {playerCount}
+                    </span>
               </div>
           </div>
 
           {/* Dealer's cards */}
           <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-2">Dealer's Hand</h2>
-              <div className="flex ml-16">{getDealerCards()}</div>
+              <h2 className="text-2xl font-bold mb-4 text-white">Dealer's Hand</h2>
+              <div className="flex justify-center items-center h-48">
+                  {getDealerCards()}
+              </div>
           </div>
 
           {/* Player's cards */}
           <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-2">Player's Hand</h2>
-              <div className="flex ml-16">{getPlayerCards()}</div>
+              <h2 className="text-2xl font-bold mb-4 text-white">Player's Hand</h2>
+              <div className="flex justify-center items-center h-48">
+                  {getPlayerCards()}
+              </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex justify-center mt-6 gap-4">
+          {/* Game controls */}
+          <div className="flex justify-center space-x-4 mt-6">
               {gameState === GameState.PlayerPhase && (
                 <>
                     <button
-                      className="px-6 py-2 bg-green-600 text-white text-lg rounded-lg hover:bg-green-700 transition"
+                      className="px-6 py-2 bg-green-600 text-white text-lg font-bold rounded shadow hover:bg-green-700 transition"
                       onClick={() => hitOrStayPlayer(Action.Hit)}
                     >
                         Hit
                     </button>
                     <button
-                      className="px-6 py-2 bg-red-600 text-white text-lg rounded-lg hover:bg-red-700 transition"
+                      className="px-6 py-2 bg-red-600 text-white text-lg font-bold rounded shadow hover:bg-red-700 transition"
                       onClick={() => hitOrStayPlayer(Action.Stay)}
                     >
                         Stay
@@ -418,11 +462,8 @@ function Card({ shuffledDeck = [], addLog, setAlertMessage, setGameState, gameSt
 
               {gameState === GameState.GameConcluded && (
                 <button
-                  className="px-6 py-2 bg-blue-600 text-white text-lg rounded-lg hover:bg-blue-700 transition"
-                  onClick={() => {
-                      // Code for starting a new round
-                      // This will be implemented later
-                  }}
+                  className="px-6 py-2 bg-blue-600 text-white text-lg font-bold rounded shadow hover:bg-blue-700 transition"
+                  onClick={startNewRound}
                 >
                     New Round
                 </button>
