@@ -111,6 +111,7 @@ const Deck = () => {
                                 <Card
                                     shuffledDeck={shuffledDeck}
                                     addLog={addLog}
+                                    logs={logs}
                                     setAlertMessage={setAlertMessage}
                                     setGameState={setGameState}
                                     gameState={gameState}
