@@ -36,6 +36,7 @@ const Deck = () => {
     // Log game state changes
     useEffect(() => {
         if (gameState) {
+            addLog()
             addLog(gameState);
         }
     }, [gameState]);
