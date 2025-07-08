@@ -1,155 +1,75 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState } from 'react';
+import { useGameContext } from '../GameContext';
 import { GameState } from '../Utils';
 
-function BettingSystem({
-                         playerChips,
-                         setPlayerChips,
-                         currentBet,
-                         setCurrentBet,
-                         gameState,
-                         setGameState,
-                         addLog,
-                         winner
-                       }) {
-  const [betAmount, setBetAmount] = useState(25);
-  const [canBet, setCanBet] = useState(true);
+const BettingSystem = () => {
+  const {
+    playerChips,
+    setPlayerChips,
+    setCurrentBet,
+    setGameState,
+    addLog,
+    shuffleAndDeal, // We'll use this function from the context
+  } = useGameContext();
 
-  // Standard chip values
-  const chipValues = [5, 25, 50, 100];
+  // Local state to manage the bet input field
+  const [betAmount, setBetAmount] = useState(10);
 
-  // Update betting state based on game state
-  useEffect(() => {
-    // Can only bet when no current game is in progress
-    setCanBet(gameState === null);
-
-    // Handle bet results when game concludes
-    if (gameState === GameState.GameConcluded && winner && currentBet > 0) {
-      handleBetResult();
-    }
-  }, [gameState, winner]);
-
-  // Handle bet results
-  const handleBetResult = () => {
-    if (winner === "Player") {
-      // Player wins - regular win pays 1:1
-      const winnings = currentBet;
-      setPlayerChips(prevChips => prevChips + winnings + currentBet);
-      addLog(`Player wins $${winnings}`);
-    } else if (winner === "Push") {
-      // Push - bet is returned
-      setPlayerChips(prevChips => prevChips + currentBet);
-      addLog(`Push - bet returned`);
-    } else {
-      // Player lost - bet is already deducted
-      addLog(`Player loses $${currentBet}`);
+  const handleBetChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    // Basic validation to ensure the bet is a positive number
+    if (!isNaN(value) && value > 0) {
+      setBetAmount(value);
     }
   };
 
-  // Handle placing bet
-  const placeBet = () => {
-    if (betAmount <= 0 || betAmount > playerChips) {
-      addLog("Invalid bet amount");
+  const handlePlaceBet = () => {
+    // 1. Validate the bet against player's chips
+    if (betAmount > playerChips) {
+      addLog("Error: Bet amount cannot exceed your chips.");
+      return;
+    }
+    if (betAmount <= 0) {
+      addLog("Error: Bet must be a positive amount.");
       return;
     }
 
-    // Deduct bet from player chips
-    setPlayerChips(playerChips - betAmount);
+    // 2. Update the global state via context functions
+    setPlayerChips(prevChips => prevChips - betAmount);
     setCurrentBet(betAmount);
-    addLog(`Bet placed: $${betAmount}`);
+    addLog(`Player bets ${betAmount} chips.`);
 
-    // Start the game
-    setGameState(GameState.CardsDealt);
-  };
-
-  // Handle bet input change
-  const handleBetChange = (e) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setBetAmount(Math.min(value, playerChips));
-    }
-  };
-
-  // Handle chip click to increase bet
-  const handleChipClick = (value) => {
-    const newAmount = Math.min(betAmount + value, playerChips);
-    setBetAmount(newAmount);
-  };
-
-  // Max bet
-  const maxBet = () => {
-    setBetAmount(playerChips);
-  };
-
-  // Clear bet
-  const clearBet = () => {
-    setBetAmount(0);
+    // 3. Trigger the start of the game round
+    // This function should shuffle the deck and change the game state
+    shuffleAndDeal();
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto bg-green-900 bg-opacity-70 rounded-lg p-4 shadow-lg">
-      <h2 className="text-xl font-bold text-white mb-4 text-center">Place Your Bet</h2>
-
-      {/* Chip selection */}
-      <div className="flex justify-center space-x-2 mb-4">
-        {chipValues.map(value => (
-          <button
-            key={`chip-${value}`}
-            className={`w-12 h-12 rounded-full text-white font-bold shadow-md hover:shadow-lg transform hover:scale-105 transition
-                            ${value === 5 ? 'bg-red-500' :
-              value === 25 ? 'bg-green-500' :
-                value === 50 ? 'bg-blue-500' :
-                  'bg-purple-500'}`}
-            onClick={() => handleChipClick(value)}
-            disabled={!canBet || betAmount + value > playerChips}
-          >
-            ${value}
-          </button>
-        ))}
-      </div>
-
-      {/* Bet input */}
-      <div className="flex mb-4">
+    <div className="bg-gray-800 bg-opacity-40 p-4 rounded-lg shadow-lg">
+      <h3 className="text-lg font-bold text-white mb-3">Place Your Bet</h3>
+      <div className="flex flex-col space-y-3">
+        <label htmlFor="bet-input" className="text-white">
+          Your Chips: {playerChips}
+        </label>
         <input
+          id="bet-input"
           type="number"
           value={betAmount}
           onChange={handleBetChange}
-          min="0"
+          min="1"
           max={playerChips}
-          className="p-2 w-full rounded-l bg-white text-center text-xl font-bold"
-          disabled={!canBet}
+          className="p-2 rounded bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
-          onClick={clearBet}
-          className="px-3 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300"
-          disabled={!canBet}
+          onClick={handlePlaceBet}
+          disabled={betAmount > playerChips || betAmount <= 0}
+          className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition disabled:bg-gray-500 disabled:cursor-not-allowed"
         >
-          Clear
-        </button>
-        <button
-          onClick={maxBet}
-          className="px-3 py-2 bg-yellow-500 text-white hover:bg-yellow-600 rounded-r"
-          disabled={!canBet}
-        >
-          Max
+          Place Bet
         </button>
       </div>
-
-      {/* Current chips */}
-      <div className="flex justify-between mb-4">
-        <span className="text-white">Available: ${playerChips}</span>
-        <span className="text-white font-bold">Bet: ${betAmount}</span>
-      </div>
-
-      {/* Place bet button */}
-      <button
-        onClick={placeBet}
-        className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white text-lg font-bold rounded shadow transition"
-        disabled={!canBet || betAmount <= 0 || betAmount > playerChips}
-      >
-        Place Bet & Deal
-      </button>
     </div>
   );
-}
+};
 
 export default BettingSystem;

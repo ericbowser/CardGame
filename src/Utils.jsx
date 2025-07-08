@@ -22,6 +22,7 @@ export const Action = {
 export const GameState = {
     Ready: "Ready",
     Betting: "Betting",
+    CardsDealt: "CardsDealt",
     PlayerTurn: "PlayerTurn",
     PlayerBusted: "PlayerBusted",
     DealerTurn: "DealerTurn",

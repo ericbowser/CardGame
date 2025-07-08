@@ -1,6 +1,6 @@
 ﻿import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { GameState } from './Utils';
-import useGameLog from './components/GameLog';
+import useGameLog from './GameLog';
 
 // Create the context
 const GameContext = createContext(null);
