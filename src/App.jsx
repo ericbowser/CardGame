@@ -1,6 +1,7 @@
 import React from 'react';
-import Deck from "../components/Deck";
+import Deck from "./components/Deck";
 import '../style/output.css';
+import {GameProvider} from "./GameContext";
 
 const App = () => {
   return (
@@ -11,7 +12,9 @@ const App = () => {
       </header>
 
       <main className="container mx-auto py-4">
-        <Deck />
+        <GameProvider>
+          <Deck />
+        </GameProvider>
       </main>
 
       <footer className="container mx-auto mt-12 py-4 text-center text-white opacity-50 text-sm">

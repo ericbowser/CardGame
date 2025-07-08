@@ -20,8 +20,36 @@ export const Action = {
 }
 
 export const GameState = {
-    CardsDealt: "Cards Dealt",
-    PlayerPhase: "Player Phase",
-    DealerPhase: "Dealer Phase",
-    GameConcluded: "Game Concluded"
-}
+    Ready: "Ready",
+    Betting: "Betting",
+    PlayerTurn: "PlayerTurn",
+    PlayerBusted: "PlayerBusted",
+    DealerTurn: "DealerTurn",
+    RoundOver: "RoundOver"
+};
+
+export const calculateHandValue = (hand) => {
+    if (!hand || hand.length === 0) {
+        return 0;
+    }
+
+    let value = 0;
+    let aceCount = 0;
+
+    // First, sum up all card values and count the Aces
+    for (const card of hand) {
+        value += card.value;
+        if (card.rank === 'A') {
+            aceCount++;
+        }
+    }
+
+    // Now, adjust for Aces if the total value is over 21
+    // This loop will convert an Ace's value from 11 to 1 if needed.
+    while (value > 21 && aceCount > 0) {
+        value -= 10; // Equivalent to changing an Ace from 11 to 1
+        aceCount--;
+    }
+
+    return value;
+};

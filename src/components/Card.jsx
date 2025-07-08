@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
-import facedown from "../src/assets/facedown4.jpg";
-import { Who, Action, GameState } from '../src/Utils';
+import facedown from "../assets/facedown4.jpg";
+import { Who, Action, GameState } from '../Utils';
 
 function Card({
                   shuffledDeck = [],

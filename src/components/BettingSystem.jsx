@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { GameState } from '../src/Utils';
+import { GameState } from '../Utils';
 
 function BettingSystem({
                          playerChips,
