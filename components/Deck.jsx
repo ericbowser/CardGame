@@ -180,7 +180,7 @@ const Deck = () => {
                       </div>
                   </div>
 
-                  {/* Betting system */}
+             {/*      Betting system 
                   {isDeckShuffled && gameState !== GameState.GameConcluded && gameState !== GameState.CardsDealt && gameState !== GameState.PlayerPhase && gameState !== GameState.DealerPhase && (
                     <BettingSystem
                       playerChips={playerChips}
@@ -192,7 +192,7 @@ const Deck = () => {
                       addLog={addLog}
                       winner={winner}
                     />
-                  )}
+                  )}*/}
 
                   {/* Game log */}
                   <div className="bg-gray-900 bg-opacity-50 p-4 rounded-lg shadow-lg mt-6">

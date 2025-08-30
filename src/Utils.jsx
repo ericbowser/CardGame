@@ -20,6 +20,7 @@ export const Action = {
 }
 
 export const GameState = {
+    DeckShuffled: "Cards Shuffled",
     CardsDealt: "Cards Dealt",
     PlayerPhase: "Player Phase",
     DealerPhase: "Dealer Phase",

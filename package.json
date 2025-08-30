@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -r node_modules/ && npm install",
     "test": "jest NODE_ENV=test",
-    "tail": "npx tailwindcss -i ./style/input.css -o ./style/output.css"
+    "tail": "npx tailwindcss -i ./style/input.css -o ./style/output.css",
+    "tail:watch": "npx tailwindcss -i ./style/input.css -o ./style/output.css --watch"
   },
   "dependencies": {
     "react": "^18.3.1",
