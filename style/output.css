@@ -601,10 +601,6 @@ video {
   margin-top: 3rem;
 }
 
-.min-h-screen {
-  min-height: 100vh;
-}
-
 .bg-radial-green-yellow {
   background-image: radial-gradient(circle, #00FF00, #0D2AEE);
 }
