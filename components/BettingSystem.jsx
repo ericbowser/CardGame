@@ -1,16 +1,19 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { GameState } from '../src/Utils';
+import { useGameContext } from '../src/GameContext';
 
-function BettingSystem({
-                         playerChips,
-                         setPlayerChips,
-                         currentBet,
-                         setCurrentBet,
-                         gameState,
-                         setGameState,
-                         addLog,
-                         winner
-                       }) {
+function BettingSystem() {
+  const {
+    playerChips,
+    currentBet,
+    gameState,
+    placeBet: placeBetInContext,
+    handleDeal,
+    roundOver,
+    lastBetAmount,
+    quickDeal
+  } = useGameContext();
+
   const [betAmount, setBetAmount] = useState(25);
   const [canBet, setCanBet] = useState(true);
 
@@ -19,54 +22,34 @@ function BettingSystem({
 
   // Update betting state based on game state
   useEffect(() => {
-    // Can only bet when no current game is in progress
-    setCanBet(gameState === null);
+    // Can bet when: no game in progress, or round is over
+    const canPlaceBet = gameState === null || 
+                       gameState === GameState.GameConcluded || 
+                       roundOver;
+    setCanBet(canPlaceBet);
 
-    // Handle bet results when game concludes
-    if (gameState === GameState.GameConcluded && winner && currentBet > 0) {
-      handleBetResult();
+    // When round is over, set bet amount to last bet amount (for quick replay)
+    if (roundOver) {
+      setBetAmount(Math.min(lastBetAmount, playerChips));
     }
-  }, [gameState, winner]);
-
-  // Handle bet results
-  const handleBetResult = () => {
-    if (winner === "Player") {
-      // Player wins - regular win pays 1:1
-      const winnings = currentBet;
-      setPlayerChips(prevChips => prevChips + winnings + currentBet);
-      addLog(`Player wins $${winnings}`);
-    } else if (winner === "Push") {
-      // Push - bet is returned
-      setPlayerChips(prevChips => prevChips + currentBet);
-      addLog(`Push - bet returned`);
-    } else {
-      // Player lost - bet is already deducted
-      addLog(`Player loses $${currentBet}`);
-    }
-  };
+  }, [gameState, roundOver, lastBetAmount, playerChips]);
 
   // Handle placing bet
-  const placeBet = () => {
+  const handlePlaceBet = () => {
     if (betAmount <= 0 || betAmount > playerChips) {
-      addLog("Invalid bet amount");
       return;
     }
 
-    // Deduct bet from player chips
-    setPlayerChips(playerChips - betAmount);
-    setCurrentBet(betAmount);
-    addLog(`Bet placed: $${betAmount}`);
-
-    // Start the game
-    setGameState(GameState.CardsDealt);
+    if (placeBetInContext(betAmount)) {
+      // After placing bet, deal cards
+      handleDeal();
+    }
   };
 
   // Handle bet input change
   const handleBetChange = (e) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setBetAmount(Math.min(value, playerChips));
-    }
+    const value = parseInt(e.target.value) || 0;
+    setBetAmount(Math.min(Math.max(0, value), playerChips));
   };
 
   // Handle chip click to increase bet
@@ -86,19 +69,35 @@ function BettingSystem({
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto bg-green-900 bg-opacity-70 rounded-lg p-4 shadow-lg">
-      <h2 className="text-xl font-bold text-white mb-4 text-center">Place Your Bet</h2>
+    <div className="w-full bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-6 shadow-mint-lg border border-mint-200">
+      <h2 className="text-2xl font-bold text-mint-800 mb-4 text-center flex items-center justify-center">
+        💰 Place Your Bet
+      </h2>
+
+      {/* Current chips display */}
+      <div className="bg-mint-50 rounded-xl p-4 mb-4 border border-mint-200">
+        <div className="flex justify-between items-center">
+          <span className="text-mint-800 font-semibold">Chips:</span>
+          <span className="text-2xl font-extrabold text-mint-700">${playerChips}</span>
+        </div>
+        {currentBet > 0 && (
+          <div className="flex justify-between items-center mt-2 pt-2 border-t border-mint-200">
+            <span className="text-sage-800 font-semibold">Current Bet:</span>
+            <span className="text-xl font-extrabold text-sage-700">${currentBet}</span>
+          </div>
+        )}
+      </div>
 
       {/* Chip selection */}
-      <div className="flex justify-center space-x-2 mb-4">
+      <div className="flex justify-center space-x-3 mb-4">
         {chipValues.map(value => (
           <button
             key={`chip-${value}`}
-            className={`w-12 h-12 rounded-full text-white font-bold shadow-md hover:shadow-lg transform hover:scale-105 transition
-                            ${value === 5 ? 'bg-red-500' :
-              value === 25 ? 'bg-green-500' :
-                value === 50 ? 'bg-blue-500' :
-                  'bg-purple-500'}`}
+            className={`w-14 h-14 rounded-full text-white font-bold shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 text-sm
+                            ${value === 5 ? 'bg-red-500 hover:bg-red-600' :
+              value === 25 ? 'bg-green-500 hover:bg-green-600' :
+                value === 50 ? 'bg-blue-500 hover:bg-blue-600' :
+                  'bg-purple-500 hover:bg-purple-600'}`}
             onClick={() => handleChipClick(value)}
             disabled={!canBet || betAmount + value > playerChips}
           >
@@ -115,39 +114,48 @@ function BettingSystem({
           onChange={handleBetChange}
           min="0"
           max={playerChips}
-          className="p-2 w-full rounded-l bg-white text-center text-xl font-bold"
+          className="p-3 w-full rounded-l-lg bg-white text-center text-xl font-bold border-2 border-mint-200 focus:border-mint-500 focus:outline-none"
           disabled={!canBet}
         />
         <button
           onClick={clearBet}
-          className="px-3 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300"
+          className="px-4 py-3 bg-gray-200 text-gray-800 hover:bg-gray-300 transition font-medium"
           disabled={!canBet}
         >
           Clear
         </button>
         <button
           onClick={maxBet}
-          className="px-3 py-2 bg-yellow-500 text-white hover:bg-yellow-600 rounded-r"
+          className="px-4 py-3 bg-yellow-500 text-white hover:bg-yellow-600 rounded-r-lg transition font-medium"
           disabled={!canBet}
         >
           Max
         </button>
       </div>
 
-      {/* Current chips */}
-      <div className="flex justify-between mb-4">
-        <span className="text-white">Available: ${playerChips}</span>
-        <span className="text-white font-bold">Bet: ${betAmount}</span>
-      </div>
-
       {/* Place bet button */}
       <button
-        onClick={placeBet}
-        className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white text-lg font-bold rounded shadow transition"
+        onClick={handlePlaceBet}
+        className="w-full py-3 bg-gradient-to-r from-mint-500 to-sage-500 hover:from-mint-600 hover:to-sage-600 text-white text-lg font-bold rounded-xl shadow-mint-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         disabled={!canBet || betAmount <= 0 || betAmount > playerChips}
       >
-        Place Bet & Deal
+        {currentBet > 0 ? 'Deal Cards' : 'Place Bet & Deal'}
       </button>
+
+      {/* Quick Deal Again button - appears when round is over */}
+      {roundOver && lastBetAmount > 0 && lastBetAmount <= playerChips && (
+        <button
+          onClick={quickDeal}
+          className="w-full mt-3 py-3 bg-gradient-to-r from-sage-500 to-mint-500 hover:from-sage-600 hover:to-mint-600 text-white text-lg font-bold rounded-xl shadow-mint-lg transition-all duration-200 transform hover:scale-105"
+        >
+          🎴 Deal Again (${lastBetAmount})
+        </button>
+      )}
+
+      {/* Info about payouts */}
+      <div className="mt-4 text-xs text-mint-700 font-medium text-center">
+        <p>Blackjack pays 3:2 • Regular wins pay 1:1</p>
+      </div>
     </div>
   );
 }

@@ -49,6 +49,7 @@ module.exports = {
                 'mint-gradient': 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 50%, #99F6E4 100%)',
                 'sage-gradient': 'linear-gradient(135deg, #F7F9F7 0%, #E8F2E8 50%, #D1E7DD 100%)',
                 'mint-radial': 'radial-gradient(ellipse at center, #F0FDFA 0%, #CCFBF1 50%, #5EEAD4 100%)',
+                'felt-table': 'linear-gradient(135deg, #1a5d47 0%, #2d7a5f 50%, #1a5d47 100%)', // Medium green felt table - better contrast
             }),
             boxShadow: {
                 'mint': '0 4px 6px -1px rgba(20, 184, 166, 0.1), 0 2px 4px -1px rgba(20, 184, 166, 0.06)',

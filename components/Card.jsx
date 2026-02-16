@@ -13,11 +13,15 @@ function Card() {
         showHoleCard,
         gameState,
         winner,
+        roundOver,
+        lastBetAmount,
+        playerChips,
 
         // Actions
         playerHit,
         playerStay,
         handleDeal,
+        quickDeal,
     } = useGameContext();
 
     // Render player cards with responsive layout
@@ -110,19 +114,19 @@ function Card() {
             {/* Game status */}
             <div className="mb-8 text-center">
                 <div className="bg-gradient-to-r from-mint-50 to-sage-50 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-mint-200 shadow-mint">
-                    <h3 className="text-3xl font-bold text-mint-700 mb-3">
+                    <h3 className="text-3xl font-bold text-mint-800 mb-3">
                         {getGameStatusMessage()}
                     </h3>
                     {showCards && (
                         <div className="flex justify-center space-x-8">
                             <div className="bg-white rounded-xl p-3 shadow-mint border border-mint-100">
-                            <span className="text-lg text-sage-700 font-bold">
-                                🤖 Dealer: <span className="text-mint-600">{showHoleCard ? dealerCount : `${calculateHandValue([dealerCards[0]])} + ?`}</span>
+                            <span className="text-lg text-sage-800 font-bold">
+                                🤖 Dealer: <span className="text-mint-700 font-extrabold">{showHoleCard ? dealerCount : `${calculateHandValue([dealerCards[0]])} + ?`}</span>
                             </span>
                             </div>
-                            <div className="bg-white rounded-xl p-3 shadow-mint border border-sage-100">
-                            <span className="text-lg text-sage-700 font-bold">
-                                👤 Player: <span className="text-mint-600">{playerCount}</span>
+                            <div className="bg-white rounded-xl p-3 shadow-mint border border-sage-200">
+                            <span className="text-lg text-sage-800 font-bold">
+                                👤 Player: <span className="text-mint-700 font-extrabold">{playerCount}</span>
                             </span>
                             </div>
                         </div>
@@ -145,13 +149,13 @@ function Card() {
 
             {/* Dealer's cards */}
             <div className="mb-8 min-h-[220px]">
-                <div className="bg-white bg-opacity-60 backdrop-blur-sm rounded-2xl p-6 shadow-mint border border-mint-100">
-                    <h2 className="text-2xl font-bold mb-6 text-sage-700 text-center flex items-center justify-center">
+                <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl p-6 shadow-mint border border-mint-200">
+                    <h2 className="text-2xl font-bold mb-6 text-sage-800 text-center flex items-center justify-center">
                         🤖 Dealer's Hand
                     </h2>
                     <div className="flex justify-center items-center h-48">
                         {showCards ? getDealerCards() : (
-                            <div className="text-sage-400 text-xl italic font-medium text-center">
+                            <div className="text-sage-600 text-xl italic font-medium text-center">
                                 <div className="text-4xl mb-2">🎴</div>
                                 Cards will appear here
                             </div>
@@ -162,13 +166,13 @@ function Card() {
 
             {/* Player's cards */}
             <div className="mb-8 min-h-[220px]">
-                <div className="bg-white bg-opacity-60 backdrop-blur-sm rounded-2xl p-6 shadow-mint border border-sage-100">
-                    <h2 className="text-2xl font-bold mb-6 text-mint-700 text-center flex items-center justify-center">
+                <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl p-6 shadow-mint border border-sage-200">
+                    <h2 className="text-2xl font-bold mb-6 text-mint-800 text-center flex items-center justify-center">
                         👤 Your Hand
                     </h2>
                     <div className="flex justify-center items-center h-48">
                         {showCards ? getPlayerCards() : (
-                            <div className="text-mint-400 text-xl italic font-medium text-center">
+                            <div className="text-mint-600 text-xl italic font-medium text-center">
                                 <div className="text-4xl mb-2">🃏</div>
                                 Your cards will appear here
                             </div>
@@ -199,19 +203,27 @@ function Card() {
                 )}
 
                 {isGameOver && (
-                    <button
-                        className="px-10 py-4 bg-gradient-to-r from-mint-500 to-sage-500 text-white text-xl font-bold rounded-2xl shadow-mint-lg hover:from-mint-600 hover:to-sage-600 transform hover:scale-105 transition-all duration-200"
-                        onClick={handleDeal}
-                    >
-                        🎴 Deal Again
-                    </button>
+                    <div className="flex flex-col items-center space-y-3">
+                        <p className="text-mint-800 text-lg font-semibold text-center">
+                            Round finished. Place a new bet to continue.
+                        </p>
+                        {/* Quick Deal Again button if last bet amount is valid */}
+                        {roundOver && lastBetAmount > 0 && lastBetAmount <= playerChips && (
+                            <button
+                                onClick={quickDeal}
+                                className="px-10 py-4 bg-gradient-to-r from-sage-500 to-mint-500 hover:from-sage-600 hover:to-mint-600 text-white text-xl font-bold rounded-2xl shadow-mint-lg transition-all duration-200 transform hover:scale-105"
+                            >
+                                🎴 Deal Again (${lastBetAmount})
+                            </button>
+                        )}
+                    </div>
                 )}
 
                 {/* Show loading state during dealer phase */}
                 {gameState === GameState.DealerPhase && (
                     <div className="flex items-center space-x-3 bg-white bg-opacity-80 rounded-2xl px-6 py-4 shadow-mint border border-mint-200">
                         <div className="w-6 h-6 border-4 border-mint-300 border-t-mint-600 rounded-full animate-spin"></div>
-                        <span className="text-mint-700 text-xl font-medium">🤖 Dealer thinking...</span>
+                        <span className="text-mint-800 text-xl font-semibold">🤖 Dealer thinking...</span>
                     </div>
                 )}
             </div>
@@ -219,18 +231,18 @@ function Card() {
             {/* Hand value indicators */}
             {showCards && (
                 <div className="mt-8 flex justify-center space-x-8 text-center">
-                    <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-4 shadow-mint border border-sage-100">
-                        <div className="text-sage-600 text-sm font-medium mb-1">🤖 Dealer</div>
-                        <div className={`text-3xl font-bold ${
-                            showHoleCard ? (dealerCount > 21 ? 'text-red-500' : dealerCount === 21 ? 'text-cream-500' : 'text-mint-600') : 'text-sage-400'
+                    <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl p-4 shadow-mint border border-sage-200">
+                        <div className="text-sage-800 text-sm font-semibold mb-1">🤖 Dealer</div>
+                        <div className={`text-3xl font-extrabold ${
+                            showHoleCard ? (dealerCount > 21 ? 'text-red-600' : dealerCount === 21 ? 'text-yellow-600' : 'text-mint-700') : 'text-sage-500'
                         }`}>
                             {showHoleCard ? dealerCount : '?'}
                         </div>
                     </div>
-                    <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-4 shadow-mint border border-mint-100">
-                        <div className="text-mint-600 text-sm font-medium mb-1">👤 Player</div>
-                        <div className={`text-3xl font-bold ${
-                            playerCount > 21 ? 'text-red-500' : playerCount === 21 ? 'text-cream-500' : 'text-mint-600'
+                    <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl p-4 shadow-mint border border-mint-200">
+                        <div className="text-mint-800 text-sm font-semibold mb-1">👤 Player</div>
+                        <div className={`text-3xl font-extrabold ${
+                            playerCount > 21 ? 'text-red-600' : playerCount === 21 ? 'text-yellow-600' : 'text-mint-700'
                         }`}>
                             {playerCount}
                         </div>

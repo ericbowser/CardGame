@@ -7,7 +7,8 @@ const GameRules = () => {
         <div className="text-mint-700">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="bg-gradient-to-r from-mint-400 to-sage-400 hover:from-mint-500 hover:to-sage-500 px-4 py-3 rounded-xl font-bold flex items-center text-white shadow-mint transform hover:scale-105 transition-all duration-200 w-full justify-center"
+                className="bg-gradient-to-r from-mint-500 to-sage-500 hover:from-mint-600 hover:to-sage-600 px-4 py-3 rounded-xl font-bold flex items-center text-white shadow-mint transform hover:scale-105 transition-all duration-200 w-full justify-center"
+                style={{textShadow: '1px 1px 2px rgba(0,0,0,0.3)'}}
             >
                 📖 Game Rules
             </button>
