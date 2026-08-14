@@ -1,14 +1,10 @@
 import { useGameContext } from '../../context';
 import { formatCountDelta } from '../../utils/countingUtils';
+import { countBadgeClass, countStatCellClass, countValueClass } from '../../utils/countDisplayStyles';
 
 function CountBadge({ delta }) {
-    const tone =
-        delta > 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-            delta < 0 ? 'bg-red-500/20 text-red-300 border-red-500/40' :
-                'bg-white/10 text-white/60 border-white/20';
-
     return (
-        <span className={`inline-flex min-w-[2rem] justify-center rounded-md border px-2 py-0.5 text-xs font-bold ${tone}`}>
+        <span className={`inline-flex min-w-[2rem] justify-center rounded-md border px-2 py-0.5 text-xs font-bold ${countBadgeClass(delta)}`}>
             {formatCountDelta(delta)}
         </span>
     );
@@ -31,10 +27,8 @@ function DeckTrackerPanel() {
         deckBlackjacks,
     } = useGameContext();
 
-    const countTone =
-        runningCount > 0 ? 'text-emerald-300' :
-            runningCount < 0 ? 'text-red-300' :
-                'text-white';
+    const runningCountClass = countValueClass(runningCount);
+    const trueCountClass = countValueClass(trueCount);
 
     return (
         <div className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-5 lg:min-h-0 lg:flex-1">
@@ -62,15 +56,15 @@ function DeckTrackerPanel() {
                                 </span>
                             </div>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/35 p-3">
-                            <div className="text-white/55">Running count</div>
-                            <div className={`mt-1 text-2xl font-extrabold ${countTone}`}>
+                        <div className={`rounded-xl border p-3 ${countStatCellClass(runningCount)}`}>
+                            <div className="text-white/70">Running count</div>
+                            <div className={`mt-1 text-2xl font-extrabold ${runningCountClass}`}>
                                 {runningCount > 0 ? `+${runningCount}` : runningCount}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/35 p-3">
-                            <div className="text-white/55">True count</div>
-                            <div className={`mt-1 text-2xl font-extrabold ${countTone}`}>
+                        <div className={`rounded-xl border p-3 ${countStatCellClass(trueCount)}`}>
+                            <div className="text-white/70">True count</div>
+                            <div className={`mt-1 text-2xl font-extrabold ${trueCountClass}`}>
                                 {trueCount > 0 ? `+${trueCount}` : trueCount}
                             </div>
                         </div>
@@ -100,13 +94,17 @@ function DeckTrackerPanel() {
                                         key={event.id}
                                         className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-xs"
                                     >
-                                        <div className="min-w-0 text-white/80">
-                                            <span className="font-semibold text-white">{event.cardName}</span>
+                                        <div className="min-w-0">
+                                            <span className={`font-semibold ${countValueClass(event.delta)}`}>
+                                                {event.cardName}
+                                            </span>
                                             <span className="text-white/45"> · {event.label}</span>
                                         </div>
                                         <div className="flex shrink-0 items-center gap-2">
                                             <CountBadge delta={event.delta} />
-                                            <span className="font-bold text-white/70">{event.runningCount > 0 ? `+${event.runningCount}` : event.runningCount}</span>
+                                            <span className={`font-bold ${countValueClass(event.runningCount)}`}>
+                                                {event.runningCount > 0 ? `+${event.runningCount}` : event.runningCount}
+                                            </span>
                                         </div>
                                     </div>
                                 ))

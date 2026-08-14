@@ -5,16 +5,14 @@ import {
     formatEvPercent,
     getEvRecommendation,
 } from '../../utils/countingUtils';
+import { countStatCellClass, countValueClass, evValueClass } from '../../utils/countDisplayStyles';
 
 function EvEstimatePanel({ wagerAmount }) {
     const { isDeckShuffled, trueCount, runningCount } = useGameContext();
 
     const evPercent = estimatePlayerEvPercent(trueCount);
     const evDollars = estimateEvDollars(wagerAmount, evPercent);
-    const evTone =
-        evPercent > 0 ? 'text-emerald-300' :
-            evPercent < 0 ? 'text-red-300' :
-                'text-white';
+    const evTone = evValueClass(evPercent);
 
     return (
         <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-5">
@@ -27,15 +25,15 @@ function EvEstimatePanel({ wagerAmount }) {
             ) : (
                 <>
                     <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
-                        <div className="rounded-lg border border-white/10 bg-black/35 p-3">
-                            <div className="text-white/55">True count</div>
-                            <div className="mt-1 font-bold text-white">
+                        <div className={`rounded-lg border p-3 ${countStatCellClass(trueCount)}`}>
+                            <div className="text-white/70">True count</div>
+                            <div className={`mt-1 text-lg font-extrabold ${countValueClass(trueCount)}`}>
                                 {trueCount > 0 ? `+${trueCount}` : trueCount}
                             </div>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/35 p-3">
-                            <div className="text-white/55">Running count</div>
-                            <div className="mt-1 font-bold text-white">
+                        <div className={`rounded-lg border p-3 ${countStatCellClass(runningCount)}`}>
+                            <div className="text-white/70">Running count</div>
+                            <div className={`mt-1 text-lg font-extrabold ${countValueClass(runningCount)}`}>
                                 {runningCount > 0 ? `+${runningCount}` : runningCount}
                             </div>
                         </div>

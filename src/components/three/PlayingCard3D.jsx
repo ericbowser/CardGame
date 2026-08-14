@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { useTexture } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
 import { useLayoutEffect } from 'react';
@@ -16,7 +17,7 @@ function configureCardTexture(texture) {
     texture.wrapT = THREE.ClampToEdgeWrapping;
 }
 
-export function PlayingCard3D({
+function PlayingCardMesh({
     frontSrc,
     backSrc,
     targetPosition,
@@ -65,5 +66,13 @@ export function PlayingCard3D({
                 side={THREE.FrontSide}
             />
         </AnimatedMesh>
+    );
+}
+
+export function PlayingCard3D(props) {
+    return (
+        <Suspense fallback={null}>
+            <PlayingCardMesh {...props} />
+        </Suspense>
     );
 }

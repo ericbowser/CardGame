@@ -2,11 +2,10 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                red: "#111",
-                white: "#fff",
-                black: "#000",
+                // Custom palette names — do not override Tailwind's red/yellow scales (needed for count colors).
+                felt: "#111",
                 darkgray: "#251313",
-                yellow: "#59EF0B",
+                brandLime: "#59EF0B",
             },
             backgroundImage: theme => ({
                 'felt-table': 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%)',

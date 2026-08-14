@@ -24,7 +24,7 @@ const GameBoard = () => {
                 {/* Table first on mobile */}
                 <div className="order-1 flex min-h-[min(46vh,400px)] flex-col lg:order-2 lg:min-h-0 lg:min-w-0 lg:flex-1">
                     {alertMessage && (
-                        <div className="mb-2 shrink-0 animate-pulse rounded-lg border border-amber-400/50 bg-amber-500/20 p-2 text-center text-sm font-bold text-amber-100 backdrop-blur-md lg:mb-3">
+                        <div className="mb-2 shrink-0 rounded-lg border border-amber-400/50 bg-amber-500/20 p-2 text-center text-sm font-bold text-amber-100 backdrop-blur-md lg:mb-3">
                             {alertMessage}
                         </div>
                     )}

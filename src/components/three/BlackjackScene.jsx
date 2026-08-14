@@ -1,13 +1,11 @@
-import { Suspense, useRef } from 'react';
+import { Suspense, memo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
     ContactShadows,
-    Environment,
     OrbitControls,
     PerspectiveCamera,
 } from '@react-three/drei';
 import facedown from '../../assets/facedown4.jpg';
-import { useGameContext } from '../../context';
 import { CardHand3D } from './CardHand3D';
 import { CasinoTable } from './CasinoTable';
 import { tableLayout } from './tableLayout';
@@ -64,16 +62,14 @@ function CameraRig() {
     );
 }
 
-function SceneContents() {
-    const {
-        playerHands,
-        dealerCards,
-        showHoleCard,
-        cardsRemaining,
-        totalCardsInShoe,
-        isDeckShuffled,
-    } = useGameContext();
-
+function SceneContents({
+    playerHands,
+    dealerCards,
+    showHoleCard,
+    cardsRemaining,
+    totalCardsInShoe,
+    isDeckShuffled,
+}) {
     const hasCards =
         playerHands.some((hand) => hand.cards.length > 0) || dealerCards.length > 0;
 
@@ -84,7 +80,12 @@ function SceneContents() {
             <PerspectiveCamera makeDefault position={[0, 4.5, 7]} fov={42} />
             <CameraRig />
 
-            <ambientLight intensity={0.35} />
+            <ambientLight intensity={0.38} />
+            <hemisphereLight
+                intensity={0.28}
+                color="#fff2dd"
+                groundColor="#0a0a0a"
+            />
             <directionalLight
                 castShadow
                 intensity={1.1}
@@ -99,8 +100,6 @@ function SceneContents() {
                 position={[0, 10, 2]}
                 castShadow
             />
-
-            <Environment preset="lobby" />
 
             <CasinoTable />
 
@@ -151,26 +150,35 @@ function SceneContents() {
     );
 }
 
-function SceneLoader() {
-    return (
-        <mesh>
-            <boxGeometry args={[0.5, 0.5, 0.5]} />
-            <meshStandardMaterial color="#0f4536" wireframe />
-        </mesh>
-    );
-}
+const MemoSceneContents = memo(SceneContents);
 
-export function BlackjackScene() {
+function BlackjackScene({
+    playerHands,
+    dealerCards,
+    showHoleCard,
+    cardsRemaining,
+    totalCardsInShoe,
+    isDeckShuffled,
+}) {
     return (
         <Canvas
             shadows
-            dpr={[1, 2]}
-            gl={{ antialias: true }}
+            dpr={[1, 1.75]}
+            gl={{ antialias: true, powerPreference: 'high-performance' }}
             style={{ width: '100%', height: '100%' }}
         >
-            <Suspense fallback={<SceneLoader />}>
-                <SceneContents />
+            <Suspense fallback={null}>
+                <MemoSceneContents
+                    playerHands={playerHands}
+                    dealerCards={dealerCards}
+                    showHoleCard={showHoleCard}
+                    cardsRemaining={cardsRemaining}
+                    totalCardsInShoe={totalCardsInShoe}
+                    isDeckShuffled={isDeckShuffled}
+                />
             </Suspense>
         </Canvas>
     );
 }
+
+export default memo(BlackjackScene);

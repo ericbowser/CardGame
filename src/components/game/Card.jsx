@@ -1,19 +1,11 @@
-import { Suspense, lazy } from 'react';
+import { memo } from 'react';
 import { GameState, Who } from '../../constants/game';
 import { useGameContext } from '../../context';
+import { useTableSceneState } from '../../hooks/useTableSceneState';
 import { calculateHandValue } from '../../utils/cardUtils';
+import BlackjackScene from '../three/BlackjackScene';
 
-const BlackjackScene = lazy(() =>
-    import('../three/BlackjackScene').then((module) => ({ default: module.BlackjackScene }))
-);
-
-function SceneFallback() {
-    return (
-        <div className="flex h-full items-center justify-center bg-[#060606] text-white/60">
-            Loading table...
-        </div>
-    );
-}
+const MemoBlackjackScene = memo(BlackjackScene);
 
 function Card() {
     const {
@@ -36,6 +28,8 @@ function Card() {
         canSplit,
         quickDeal,
     } = useGameContext();
+
+    const tableSceneState = useTableSceneState();
 
     const getGameStatusMessage = () => {
         if (!gameState) {
@@ -66,9 +60,11 @@ function Card() {
 
     const canPlayerAct = gameState === GameState.PlayerPhase;
     const isGameOver = gameState === GameState.GameConcluded;
+    const isDealerTurn = gameState === GameState.DealerPhase;
     const hasPlayerCards = playerHands.some((hand) => hand.cards.length > 0);
     const showCards = gameState && (hasPlayerCards || dealerCards.length > 0);
     const canDealAgain = roundOver && betAmount > 0 && betAmount <= playerChips;
+    const showActionBar = isDeckShuffled && (canPlayerAct || isGameOver || isDealerTurn);
 
     const dealerDisplay = showHoleCard
         ? dealerCount
@@ -84,30 +80,36 @@ function Card() {
                 </h1>
             </div>
 
-            {isDeckShuffled && (
-                <div className="pointer-events-none shrink-0 px-3 pb-1.5 pt-10 sm:px-4 sm:pb-2 sm:pt-12 lg:px-6 lg:pt-14">
+            <div
+                className={`pointer-events-none shrink-0 px-3 sm:px-4 lg:px-6 ${
+                    isDeckShuffled
+                        ? 'pb-1.5 pt-10 sm:pb-2 sm:pt-12 lg:pt-14'
+                        : 'min-h-0 p-0'
+                }`}
+            >
+                {isDeckShuffled && (
                     <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-3 py-1.5 text-center backdrop-blur-md sm:px-5 sm:py-3">
                         <p className="text-sm font-semibold tracking-wide text-white sm:text-base lg:text-lg">
                             {getGameStatusMessage()}
                         </p>
-                        {showCards && (
-                            <div className="mt-1.5 flex flex-wrap justify-center gap-1.5 text-xs sm:mt-2 sm:gap-4 sm:text-sm lg:text-base">
-                                <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-amber-100 sm:px-3 sm:py-1">
-                                    Dealer: {dealerDisplay}
-                                </span>
-                                <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-emerald-100 sm:px-3 sm:py-1">
-                                    Player: {playerCountDisplay}
-                                </span>
-                            </div>
-                        )}
+                        <div
+                            className={`mt-1.5 flex flex-wrap justify-center gap-1.5 text-xs sm:mt-2 sm:gap-4 sm:text-sm lg:text-base ${
+                                showCards ? 'visible' : 'invisible'
+                            }`}
+                        >
+                            <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-amber-100 sm:px-3 sm:py-1">
+                                Dealer: {dealerDisplay}
+                            </span>
+                            <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-emerald-100 sm:px-3 sm:py-1">
+                                Player: {playerCountDisplay || '—'}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="min-h-0 flex-1 overflow-hidden bg-[#060606]">
-                <Suspense fallback={<SceneFallback />}>
-                    <BlackjackScene />
-                </Suspense>
+                <MemoBlackjackScene {...tableSceneState} />
             </div>
 
             {!isDeckShuffled && (
@@ -126,8 +128,12 @@ function Card() {
                 </div>
             )}
 
-            {isDeckShuffled && (canPlayerAct || isGameOver || gameState === GameState.DealerPhase) && (
-                <div className="pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4">
+            {isDeckShuffled && (
+                <div
+                    className={`pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4 ${
+                        showActionBar ? 'visible' : 'invisible min-h-[4.5rem]'
+                    }`}
+                >
                     {canPlayerAct && (
                         <div className="mx-auto flex w-full max-w-xl justify-center gap-1.5 sm:gap-3">
                             <button
@@ -172,7 +178,7 @@ function Card() {
                         </div>
                     )}
 
-                    {gameState === GameState.DealerPhase && (
+                    {isDealerTurn && (
                         <div className="mx-auto flex max-w-lg items-center justify-center gap-3">
                             <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300" />
                             <span className="font-semibold text-white">Dealer thinking...</span>

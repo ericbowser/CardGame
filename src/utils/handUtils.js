@@ -10,12 +10,13 @@ export function getCardRank(cardSrc) {
     return match?.[1] ?? '';
 }
 
-export function createPlayerHand(cards, bet) {
+export function createPlayerHand(cards, bet, { awaitingSplitDeal = false } = {}) {
     return {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         cards: [...cards],
         bet,
         status: HandStatus.Playing,
+        awaitingSplitDeal,
     };
 }
 
@@ -58,12 +59,11 @@ export function formatHandTotals(hands) {
         return String(getHandValue(hands[0]));
     }
     return hands
-        .map((hand, index) => {
-            const value = getHandValue(hand);
-            if (hand.status === HandStatus.Bust) {
-                return `H${index + 1}: bust`;
+        .map((hand) => {
+            if (hand.awaitingSplitDeal) {
+                return '?';
             }
-            return `H${index + 1}: ${value}`;
+            return String(getHandValue(hand));
         })
         .join(' · ');
 }

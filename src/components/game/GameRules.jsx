@@ -94,8 +94,10 @@ const GameRules = () => {
                                             <div>
                                                 <strong className="text-gray-800">Split:</strong> With two cards of the same rank
                                                 (e.g. 8+8, K+K), you may split once into two hands. Each hand gets a second bet
-                                                equal to your original wager. Split aces receive one card each and then stand
-                                                automatically; 21 after splitting aces pays 1:1, not 3:2.
+                                                equal to your original wager. The first hand receives one card immediately;
+                                                after you finish it, the second hand is dealt one card before you play it.
+                                                Split aces receive one card each and then stand automatically; 21 after
+                                                splitting aces pays 1:1, not 3:2.
                                             </div>
                                         </li>
                                         <li className="flex items-start">

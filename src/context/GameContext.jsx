@@ -18,6 +18,7 @@ import {
     getHiLoCount,
 } from '../utils/countingUtils';
 import { buildShoe, shuffleArray } from '../utils/deckUtils';
+import { preloadGameTextures } from '../utils/texturePreload';
 import {
     canSplitHand,
     createPlayerHand,
@@ -207,6 +208,7 @@ export const GameProvider = ({ children }) => {
             if (imageDefaults.length === FULL_DECK_SIZE) {
                 deckRef.current = imageDefaults;
                 setDeck(imageDefaults);
+                preloadGameTextures(imageDefaults);
                 imagesLoadedRef.current = true;
                 addLog('Cards loaded successfully.');
             } else {
@@ -299,16 +301,73 @@ export const GameProvider = ({ children }) => {
         setGameState(GameState.GameConcluded);
     };
 
+    /** Deal the opening card when a split hand becomes active (standard Vegas flow). */
+    const dealSplitOpeningCard = (hands, handIndex) => {
+        const hand = hands[handIndex];
+        if (!hand?.awaitingSplitDeal || hand.status !== HandStatus.Playing) {
+            return false;
+        }
+
+        const deckCopy = [...shuffledDeckRef.current];
+        const newCard = deckCopy.pop();
+        hand.cards.push(newCard);
+        hand.awaitingSplitDeal = false;
+        updateShuffledDeck(deckCopy);
+        recordCount(newCard, `Split hand ${handIndex + 1} deal`);
+
+        const value = calculateHandValue(hand.cards);
+        if (value > 21) {
+            hand.status = HandStatus.Bust;
+            handleHandLoss(hand);
+            addLog(`Hand ${handIndex + 1} busts on the deal with ${value}.`);
+            return true;
+        }
+
+        addLog(`Hand ${handIndex + 1} dealt — now ${value}.`);
+        return false;
+    };
+
+    const finishSplitHandA = (hands, handIndex) => {
+        const handA = hands[handIndex];
+        const value = calculateHandValue(handA.cards);
+
+        if (value > 21) {
+            handA.status = HandStatus.Bust;
+            handleHandLoss(handA);
+            addLog(`Hand 1 busts on the split deal with ${value}.`);
+            syncPlayerHands(hands);
+            advancePlayerTurn(hands);
+            return true;
+        }
+
+        syncPlayerHands(hands);
+        activeHandIndexRef.current = handIndex;
+        setActiveHandIndex(handIndex);
+        addLog(`Split! Hand 1 plays with ${value}.`);
+        return false;
+    };
+
     const advancePlayerTurn = (hands) => {
         const current = activeHandIndexRef.current;
 
         for (let i = current + 1; i < hands.length; i++) {
-            if (hands[i].status === HandStatus.Playing) {
+            if (hands[i].status !== HandStatus.Playing) {
+                continue;
+            }
+
+            const bustOnDeal = dealSplitOpeningCard(hands, i);
+            syncPlayerHands(hands);
+
+            if (bustOnDeal) {
                 activeHandIndexRef.current = i;
-                setActiveHandIndex(i);
-                addLog(`Hand ${i + 1} — your turn.`);
+                advancePlayerTurn(hands);
                 return;
             }
+
+            activeHandIndexRef.current = i;
+            setActiveHandIndex(i);
+            addLog(`Hand ${i + 1} — your turn.`);
+            return;
         }
 
         const surviving = hands.filter((hand) => hand.status !== HandStatus.Bust);
@@ -455,7 +514,7 @@ export const GameProvider = ({ children }) => {
 
         const [cardA, cardB] = hand.cards;
         const handA = createPlayerHand([cardA], splitBet);
-        const handB = createPlayerHand([cardB], splitBet);
+        const handB = createPlayerHand([cardB], splitBet, { awaitingSplitDeal: true });
         hands.splice(handIndex, 1, handA, handB);
 
         const deckCopy = [...shuffledDeckRef.current];
@@ -463,6 +522,7 @@ export const GameProvider = ({ children }) => {
         if (isAcePair(handA) && TABLE_RULES.splitAcesOneCard) {
             handA.cards.push(deckCopy.pop());
             handB.cards.push(deckCopy.pop());
+            handB.awaitingSplitDeal = false;
             recordCount(handA.cards[1], 'Split ace hand 1');
             recordCount(handB.cards[1], 'Split ace hand 2');
             handA.status = HandStatus.Stand;
@@ -476,13 +536,11 @@ export const GameProvider = ({ children }) => {
             return;
         }
 
-        handA.cards.push(deckCopy.pop());
-        recordCount(handA.cards[2], 'Split hand 1');
+        const splitCard = deckCopy.pop();
+        handA.cards.push(splitCard);
+        recordCount(splitCard, 'Split hand 1 deal');
         updateShuffledDeck(deckCopy);
-        syncPlayerHands(hands);
-        activeHandIndexRef.current = handIndex;
-        setActiveHandIndex(handIndex);
-        addLog(`Split! Hand 1 plays with ${calculateHandValue(handA.cards)}.`);
+        finishSplitHandA(hands, handIndex);
     };
 
     const resolveHandsAgainstDealer = (dealerFinalCount, dealerBusted) => {
