@@ -17,7 +17,7 @@ function EvEstimatePanel({ wagerAmount }) {
                 'text-white';
 
     return (
-        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
+        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-5">
             <h2 className="mb-3 text-lg font-bold text-white">Estimated EV</h2>
 
             {!isDeckShuffled ? (

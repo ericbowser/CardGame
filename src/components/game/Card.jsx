@@ -78,24 +78,24 @@ function Card() {
 
     return (
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl">
-            <div className="pointer-events-none absolute left-4 top-4 z-30">
-                <h1 className="text-2xl font-bold tracking-[0.15em] text-amber-300/90 sm:text-3xl">
+            <div className="pointer-events-none absolute left-3 top-3 z-30 sm:left-4 sm:top-4">
+                <h1 className="text-lg font-bold tracking-[0.12em] text-amber-300/90 sm:text-2xl sm:tracking-[0.15em] lg:text-3xl">
                     BLACKJACK
                 </h1>
             </div>
 
             {isDeckShuffled && (
-                <div className="pointer-events-none shrink-0 px-4 pb-2 pt-12 sm:px-6 sm:pt-14">
-                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-4 py-2 text-center backdrop-blur-md sm:px-5 sm:py-3">
-                        <p className="text-base font-semibold tracking-wide text-white sm:text-lg">
+                <div className="pointer-events-none shrink-0 px-3 pb-1.5 pt-10 sm:px-4 sm:pb-2 sm:pt-12 lg:px-6 lg:pt-14">
+                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-3 py-1.5 text-center backdrop-blur-md sm:px-5 sm:py-3">
+                        <p className="text-sm font-semibold tracking-wide text-white sm:text-base lg:text-lg">
                             {getGameStatusMessage()}
                         </p>
                         {showCards && (
-                            <div className="mt-2 flex flex-wrap justify-center gap-2 text-sm sm:gap-4 sm:text-base">
-                                <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-amber-100">
+                            <div className="mt-1.5 flex flex-wrap justify-center gap-1.5 text-xs sm:mt-2 sm:gap-4 sm:text-sm lg:text-base">
+                                <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-amber-100 sm:px-3 sm:py-1">
                                     Dealer: {dealerDisplay}
                                 </span>
-                                <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-emerald-100">
+                                <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-emerald-100 sm:px-3 sm:py-1">
                                     Player: {playerCountDisplay}
                                 </span>
                             </div>
@@ -129,17 +129,17 @@ function Card() {
             {isDeckShuffled && (canPlayerAct || isGameOver || gameState === GameState.DealerPhase) && (
                 <div className="pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4">
                     {canPlayerAct && (
-                        <div className="mx-auto flex w-full max-w-xl justify-center gap-2 sm:gap-3">
+                        <div className="mx-auto flex w-full max-w-xl justify-center gap-1.5 sm:gap-3">
                             <button
                                 type="button"
-                                className="min-w-[5.5rem] flex-1 rounded-xl bg-white/15 px-4 py-3 text-base font-bold text-white transition hover:bg-white/25 sm:text-lg"
+                                className="min-w-0 flex-1 rounded-xl bg-white/15 px-2 py-2.5 text-sm font-bold text-white transition hover:bg-white/25 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerHit}
                             >
                                 Hit
                             </button>
                             <button
                                 type="button"
-                                className="min-w-[5.5rem] flex-1 rounded-xl bg-amber-500 px-4 py-3 text-base font-bold text-black transition hover:bg-amber-400 sm:text-lg"
+                                className="min-w-0 flex-1 rounded-xl bg-amber-500 px-2 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerStay}
                             >
                                 Stay
@@ -147,7 +147,7 @@ function Card() {
                             <button
                                 type="button"
                                 disabled={!canSplit}
-                                className="min-w-[5.5rem] flex-1 rounded-xl bg-violet-600 px-4 py-3 text-base font-bold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40 sm:text-lg"
+                                className="min-w-0 flex-1 rounded-xl bg-violet-600 px-2 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerSplit}
                             >
                                 Split

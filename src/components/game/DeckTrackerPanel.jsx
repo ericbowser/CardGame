@@ -37,15 +37,15 @@ function DeckTrackerPanel() {
                 'text-white';
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
-            <h2 className="mb-4 shrink-0 text-xl font-bold text-white">Deck Tracker</h2>
+        <div className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-5 lg:min-h-0 lg:flex-1">
+            <h2 className="mb-3 shrink-0 text-lg font-bold text-white sm:mb-4 sm:text-xl">Deck Tracker</h2>
 
             {!isDeckShuffled ? (
                 <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/60">
                     Choose a shoe size and shuffle to begin tracking cards with Hi-Lo (+1 / 0 / -1).
                 </div>
             ) : (
-                <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
                     <div className="grid shrink-0 grid-cols-2 gap-3 text-sm">
                         <div className="rounded-xl border border-white/10 bg-black/35 p-3">
                             <div className="text-white/55">Shoe</div>
@@ -89,7 +89,7 @@ function DeckTrackerPanel() {
                         </div>
                     </div>
 
-                    <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-white/10 bg-black/35 p-3">
+                    <div className="flex max-h-48 flex-col rounded-xl border border-white/10 bg-black/35 p-3 lg:max-h-none lg:min-h-0 lg:flex-1">
                         <h3 className="mb-2 shrink-0 text-sm font-bold text-white/90">Count activity</h3>
                         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                             {countEvents.length === 0 ? (

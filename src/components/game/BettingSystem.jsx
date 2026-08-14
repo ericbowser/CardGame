@@ -63,13 +63,13 @@ function BettingSystem() {
 
     return (
         <div className="flex w-full flex-col gap-3">
-            <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
-            <h2 className="mb-4 text-center text-xl font-bold text-white">Place Your Bet</h2>
+            <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-6">
+            <h2 className="mb-3 text-center text-lg font-bold text-white sm:mb-4 sm:text-xl">Place Your Bet</h2>
 
             <div className="mb-4 rounded-xl border border-white/10 bg-black/40 p-4">
                 <div className="mb-3 border-b border-white/10 pb-3 text-center">
                     <div className="text-xs font-semibold uppercase tracking-wide text-white/55">Bet amount</div>
-                    <div className="mt-1 text-4xl font-extrabold tabular-nums text-amber-300">
+                    <div className="mt-1 text-3xl font-extrabold tabular-nums text-amber-300 sm:text-4xl">
                         ${betAmount}
                     </div>
                 </div>
@@ -91,12 +91,12 @@ function BettingSystem() {
                 </p>
             )}
 
-            <div className="mb-4 flex justify-center gap-3">
+            <div className="mb-4 flex justify-center gap-2 sm:gap-3">
                 {chipValues.map((value) => (
                     <button
                         key={`chip-${value}`}
                         type="button"
-                        className={`h-14 w-14 rounded-full text-sm font-bold text-white shadow-lg transition hover:scale-110 disabled:opacity-40 ${CHIP_STYLES[value]}`}
+                        className={`h-11 w-11 rounded-full text-xs font-bold text-white shadow-lg transition hover:scale-110 disabled:opacity-40 sm:h-14 sm:w-14 sm:text-sm ${CHIP_STYLES[value]}`}
                         onClick={() => handleChipClick(value)}
                         disabled={!canBet || betAmount + value > playerChips}
                     >
@@ -105,12 +105,12 @@ function BettingSystem() {
                 ))}
             </div>
 
-            <div className="mb-4 flex gap-0">
+            <div className="mb-4 flex flex-wrap gap-0 sm:flex-nowrap">
                 <div className="flex shrink-0">
                     <button
                         type="button"
                         onClick={() => adjustBet(-5)}
-                        className="rounded-l-lg bg-white/10 px-3 py-3 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40"
+                        className="rounded-l-lg bg-white/10 px-2.5 py-2.5 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40 sm:px-3 sm:py-3"
                         disabled={!canBet || betAmount <= 0}
                         aria-label="Decrease bet by 5"
                     >
@@ -119,7 +119,7 @@ function BettingSystem() {
                     <button
                         type="button"
                         onClick={() => adjustBet(5)}
-                        className="rounded-r-lg border-l border-white/10 bg-white/10 px-3 py-3 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40"
+                        className="rounded-r-lg border-l border-white/10 bg-white/10 px-2.5 py-2.5 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40 sm:px-3 sm:py-3"
                         disabled={!canBet || betAmount >= playerChips}
                         aria-label="Increase bet by 5"
                     >
@@ -135,13 +135,13 @@ function BettingSystem() {
                     step="5"
                     readOnly={!canBet}
                     aria-label="Bet amount"
-                    className={`min-w-0 flex-1 border-y border-l-0 border-white/30 bg-neutral-900 p-3 text-center text-xl font-bold tabular-nums text-amber-100 caret-amber-400 [color-scheme:dark] focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`}
+                    className={`min-w-0 flex-1 basis-[4.5rem] border-y border-l-0 border-white/30 bg-neutral-900 p-2.5 text-center text-lg font-bold tabular-nums text-amber-100 caret-amber-400 [color-scheme:dark] focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:p-3 sm:text-xl ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`}
                     style={{ WebkitTextFillColor: 'rgb(253 230 138)' }}
                 />
                 <button
                     type="button"
                     onClick={() => setBetAmount(0)}
-                    className="border-l border-white/10 bg-white/10 px-4 py-3 font-medium text-white transition hover:bg-white/20 disabled:opacity-40"
+                    className="border-l border-white/10 bg-white/10 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-white/20 disabled:opacity-40 sm:px-4 sm:py-3"
                     disabled={!canBet}
                 >
                     Clear
@@ -149,7 +149,7 @@ function BettingSystem() {
                 <button
                     type="button"
                     onClick={() => setBetAmount(playerChips)}
-                    className="rounded-r-lg bg-amber-500 px-4 py-3 font-medium text-black transition hover:bg-amber-400 disabled:opacity-40"
+                    className="rounded-r-lg bg-amber-500 px-3 py-2.5 text-sm font-medium text-black transition hover:bg-amber-400 disabled:opacity-40 sm:px-4 sm:py-3"
                     disabled={!canBet}
                 >
                     Max
