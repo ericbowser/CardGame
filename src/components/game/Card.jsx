@@ -1,0 +1,172 @@
+import { Suspense, lazy } from 'react';
+import { GameState, Who } from '../../constants/game';
+import { useGameContext } from '../../context';
+import { calculateHandValue } from '../../utils/cardUtils';
+
+const BlackjackScene = lazy(() =>
+    import('../three/BlackjackScene').then((module) => ({ default: module.BlackjackScene }))
+);
+
+function SceneFallback() {
+    return (
+        <div className="flex h-full items-center justify-center bg-[#060606] text-white/60">
+            Loading table...
+        </div>
+    );
+}
+
+function Card() {
+    const {
+        playerCards,
+        dealerCards,
+        playerCount,
+        dealerCount,
+        showHoleCard,
+        gameState,
+        winner,
+        roundOver,
+        betAmount,
+        playerChips,
+        isDeckShuffled,
+        shuffleDeck,
+        playerHit,
+        playerStay,
+        quickDeal,
+    } = useGameContext();
+
+    const getGameStatusMessage = () => {
+        if (!gameState) {
+            return 'Ready to play';
+        }
+
+        switch (gameState) {
+            case GameState.DeckShuffled:
+                return 'Deck shuffled — place your bet';
+            case GameState.CardsDealt:
+                return 'Dealing cards...';
+            case GameState.PlayerPhase:
+                return 'Your turn — Hit or Stay?';
+            case GameState.DealerPhase:
+                return "Dealer's turn...";
+            case GameState.GameConcluded:
+                if (winner === 'Push') return "Push — it's a tie";
+                if (winner === Who.Player) return 'You win!';
+                if (winner === Who.Dealer) return 'Dealer wins';
+                return 'Round over';
+            default:
+                return '';
+        }
+    };
+
+    const canPlayerAct = gameState === GameState.PlayerPhase;
+    const isGameOver = gameState === GameState.GameConcluded;
+    const showCards = gameState && (playerCards.length > 0 || dealerCards.length > 0);
+    const canDealAgain = roundOver && betAmount > 0 && betAmount <= playerChips;
+
+    const dealerDisplay = showHoleCard
+        ? dealerCount
+        : dealerCards[0]
+            ? `${calculateHandValue([dealerCards[0]])} + ?`
+            : '?';
+
+    return (
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl">
+            <div className="pointer-events-none absolute left-4 top-4 z-30">
+                <h1 className="text-2xl font-bold tracking-[0.15em] text-amber-300/90 sm:text-3xl">
+                    BLACKJACK
+                </h1>
+            </div>
+
+            {isDeckShuffled && (
+                <div className="pointer-events-none shrink-0 px-4 pb-2 pt-12 sm:px-6 sm:pt-14">
+                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-4 py-2 text-center backdrop-blur-md sm:px-5 sm:py-3">
+                        <p className="text-base font-semibold tracking-wide text-white sm:text-lg">
+                            {getGameStatusMessage()}
+                        </p>
+                        {showCards && (
+                            <div className="mt-2 flex justify-center gap-3 text-sm sm:gap-4 sm:text-base">
+                                <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-amber-100">
+                                    Dealer: {dealerDisplay}
+                                </span>
+                                <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-emerald-100">
+                                    Player: {playerCount}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <div className="min-h-0 flex-1 overflow-hidden bg-[#060606]">
+                <Suspense fallback={<SceneFallback />}>
+                    <BlackjackScene />
+                </Suspense>
+            </div>
+
+            {!isDeckShuffled && (
+                <div className="pointer-events-auto shrink-0 border-t border-white/10 bg-black/85 px-4 py-4 text-center backdrop-blur-md">
+                    <p className="mb-1 text-lg font-bold text-white">Welcome to the table</p>
+                    <p className="mb-3 text-sm text-white/70">
+                        Choose 1 or 6 decks in Game Controls, then shuffle to start
+                    </p>
+                    <button
+                        type="button"
+                        className="rounded-xl bg-amber-500 px-6 py-2 text-sm font-bold text-black transition hover:bg-amber-400"
+                        onClick={shuffleDeck}
+                    >
+                        Shuffle Deck
+                    </button>
+                </div>
+            )}
+
+            {isDeckShuffled && (canPlayerAct || isGameOver || gameState === GameState.DealerPhase) && (
+                <div className="pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4">
+                    {canPlayerAct && (
+                        <div className="mx-auto flex w-full max-w-lg justify-center gap-3 sm:gap-4">
+                            <button
+                                type="button"
+                                className="min-w-[7rem] flex-1 rounded-xl bg-white/15 px-6 py-3 text-base font-bold text-white transition hover:bg-white/25 sm:text-lg"
+                                onClick={playerHit}
+                            >
+                                Hit
+                            </button>
+                            <button
+                                type="button"
+                                className="min-w-[7rem] flex-1 rounded-xl bg-amber-500 px-6 py-3 text-base font-bold text-black transition hover:bg-amber-400 sm:text-lg"
+                                onClick={playerStay}
+                            >
+                                Stay
+                            </button>
+                        </div>
+                    )}
+
+                    {isGameOver && (
+                        <div className="mx-auto flex w-full max-w-lg flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                            <p className="text-center text-sm text-white/80 sm:text-left">
+                                Round finished — place a new bet to continue.
+                            </p>
+                            {canDealAgain && (
+                                <button
+                                    type="button"
+                                    onClick={quickDeal}
+                                    className="shrink-0 rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-500"
+                                >
+                                    Deal Again (${betAmount})
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {gameState === GameState.DealerPhase && (
+                        <div className="mx-auto flex max-w-lg items-center justify-center gap-3">
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300" />
+                            <span className="font-semibold text-white">Dealer thinking...</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default Card;

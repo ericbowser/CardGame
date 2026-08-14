@@ -2,8 +2,8 @@
 import Card from "./Card";
 import BettingSystem from "./BettingSystem";
 import GameRules from "./GameRules";
-import useGameLog from "./GameLog";
-import { GameState } from "../src/Utils";
+import { GameState } from '../../constants/game';
+import { useGameLog } from '../../hooks/useGameLog';
 
 const Deck = () => {
     // Game state
@@ -21,7 +21,7 @@ const Deck = () => {
     const [currentBet, setCurrentBet] = useState(0);
 
     // Game logging
-    const { logs, addLog, clearLogs } = useGameLog([]);
+    const { logs, addLog, clearLogs } = useGameLog();
 
     // Clear alert after a delay
     useEffect(() => {
@@ -59,7 +59,7 @@ const Deck = () => {
 
     // Import card images
     const importAllImages = async () => {
-        const modulePaths = import.meta.glob('../src/assets/images/*.{png,jpg,jpeg,js}');
+        const modulePaths = import.meta.glob('../../assets/images/*.{png,jpg,jpeg,js}');
         const imagePromises = Object.keys(modulePaths).map((path) => modulePaths[path]());
         return await Promise.all(imagePromises);
     };
