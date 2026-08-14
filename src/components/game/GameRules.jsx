@@ -60,11 +60,11 @@ const GameRules = () => {
                                         </li>
                                         <li className="flex items-start">
                                             <span className="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">4</span>
-                                            <span>Choose to "Hit" (get another card) or "Stay" (end your turn with current cards).</span>
+                                            <span>Choose to &quot;Hit&quot; (get another card), &quot;Stay&quot; (end your turn), or &quot;Split&quot; when you have a matching pair.</span>
                                         </li>
                                         <li className="flex items-start">
                                             <span className="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">5</span>
-                                            <span>If your hand total goes over 21, you "bust" and lose immediately.</span>
+                                            <span>If your hand total goes over 21, you &quot;bust&quot; and lose immediately.</span>
                                         </li>
                                         <li className="flex items-start">
                                             <span className="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">6</span>
@@ -90,9 +90,18 @@ const GameRules = () => {
                                             </div>
                                         </li>
                                         <li className="flex items-start">
+                                            <span className="text-gray-500 text-xl mr-3">✂️</span>
+                                            <div>
+                                                <strong className="text-gray-800">Split:</strong> With two cards of the same rank
+                                                (e.g. 8+8, K+K), you may split once into two hands. Each hand gets a second bet
+                                                equal to your original wager. Split aces receive one card each and then stand
+                                                automatically; 21 after splitting aces pays 1:1, not 3:2.
+                                            </div>
+                                        </li>
+                                        <li className="flex items-start">
                                             <span className="text-gray-500 text-xl mr-3">🤝</span>
                                             <div>
-                                                <strong className="text-gray-800">Push:</strong> If your hand ties with the dealer's, it's a "push" and
+                                                <strong className="text-gray-800">Push:</strong> If your hand ties with the dealer&apos;s, it&apos;s a &quot;push&quot; and
                                                 nobody wins.
                                             </div>
                                         </li>

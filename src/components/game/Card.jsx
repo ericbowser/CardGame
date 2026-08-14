@@ -17,9 +17,10 @@ function SceneFallback() {
 
 function Card() {
     const {
-        playerCards,
+        playerHands,
+        activeHandIndex,
         dealerCards,
-        playerCount,
+        playerCountDisplay,
         dealerCount,
         showHoleCard,
         gameState,
@@ -31,6 +32,8 @@ function Card() {
         shuffleDeck,
         playerHit,
         playerStay,
+        playerSplit,
+        canSplit,
         quickDeal,
     } = useGameContext();
 
@@ -45,11 +48,14 @@ function Card() {
             case GameState.CardsDealt:
                 return 'Dealing cards...';
             case GameState.PlayerPhase:
-                return 'Your turn — Hit or Stay?';
+                return playerHands.length > 1
+                    ? `Hand ${activeHandIndex + 1} — Hit, Stay, or Split?`
+                    : 'Your turn — Hit, Stay, or Split?';
             case GameState.DealerPhase:
                 return "Dealer's turn...";
             case GameState.GameConcluded:
                 if (winner === 'Push') return "Push — it's a tie";
+                if (winner === 'Mixed') return 'Split round complete';
                 if (winner === Who.Player) return 'You win!';
                 if (winner === Who.Dealer) return 'Dealer wins';
                 return 'Round over';
@@ -60,7 +66,8 @@ function Card() {
 
     const canPlayerAct = gameState === GameState.PlayerPhase;
     const isGameOver = gameState === GameState.GameConcluded;
-    const showCards = gameState && (playerCards.length > 0 || dealerCards.length > 0);
+    const hasPlayerCards = playerHands.some((hand) => hand.cards.length > 0);
+    const showCards = gameState && (hasPlayerCards || dealerCards.length > 0);
     const canDealAgain = roundOver && betAmount > 0 && betAmount <= playerChips;
 
     const dealerDisplay = showHoleCard
@@ -84,12 +91,12 @@ function Card() {
                             {getGameStatusMessage()}
                         </p>
                         {showCards && (
-                            <div className="mt-2 flex justify-center gap-3 text-sm sm:gap-4 sm:text-base">
+                            <div className="mt-2 flex flex-wrap justify-center gap-2 text-sm sm:gap-4 sm:text-base">
                                 <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-amber-100">
                                     Dealer: {dealerDisplay}
                                 </span>
                                 <span className="rounded-lg bg-white/10 px-3 py-1 font-bold text-emerald-100">
-                                    Player: {playerCount}
+                                    Player: {playerCountDisplay}
                                 </span>
                             </div>
                         )}
@@ -122,20 +129,28 @@ function Card() {
             {isDeckShuffled && (canPlayerAct || isGameOver || gameState === GameState.DealerPhase) && (
                 <div className="pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4">
                     {canPlayerAct && (
-                        <div className="mx-auto flex w-full max-w-lg justify-center gap-3 sm:gap-4">
+                        <div className="mx-auto flex w-full max-w-xl justify-center gap-2 sm:gap-3">
                             <button
                                 type="button"
-                                className="min-w-[7rem] flex-1 rounded-xl bg-white/15 px-6 py-3 text-base font-bold text-white transition hover:bg-white/25 sm:text-lg"
+                                className="min-w-[5.5rem] flex-1 rounded-xl bg-white/15 px-4 py-3 text-base font-bold text-white transition hover:bg-white/25 sm:text-lg"
                                 onClick={playerHit}
                             >
                                 Hit
                             </button>
                             <button
                                 type="button"
-                                className="min-w-[7rem] flex-1 rounded-xl bg-amber-500 px-6 py-3 text-base font-bold text-black transition hover:bg-amber-400 sm:text-lg"
+                                className="min-w-[5.5rem] flex-1 rounded-xl bg-amber-500 px-4 py-3 text-base font-bold text-black transition hover:bg-amber-400 sm:text-lg"
                                 onClick={playerStay}
                             >
                                 Stay
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!canSplit}
+                                className="min-w-[5.5rem] flex-1 rounded-xl bg-violet-600 px-4 py-3 text-base font-bold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40 sm:text-lg"
+                                onClick={playerSplit}
+                            >
+                                Split
                             </button>
                         </div>
                     )}

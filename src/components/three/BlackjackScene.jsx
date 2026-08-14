@@ -1,5 +1,5 @@
-import { Suspense, useLayoutEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Suspense, useRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
     ContactShadows,
     Environment,
@@ -9,53 +9,79 @@ import {
 import facedown from '../../assets/facedown4.jpg';
 import { useGameContext } from '../../context';
 import { CardHand3D } from './CardHand3D';
-import { CasinoTable, TABLE_RADIUS } from './CasinoTable';
+import { CasinoTable } from './CasinoTable';
+import { tableLayout } from './tableLayout';
 import { DeckStack3D } from './DeckStack3D';
 
 function CameraRig() {
     const { camera, size } = useThree();
+    const controlsRef = useRef(null);
     const aspect = size.width / size.height;
+    const layoutKey = useRef('');
 
-    useLayoutEffect(() => {
+    useFrame(() => {
         if (!camera.isPerspectiveCamera) {
             return;
         }
 
-        const distance = aspect > 1.8 ? 9.5 : aspect > 1.2 ? 10.5 : 12;
-        camera.position.set(0, distance * 0.72, distance * 0.58);
-        camera.fov = aspect > 1.5 ? 52 : 46;
+        const { topY, playerZ, dealerZ } = tableLayout;
+        const playCenterZ = (playerZ + dealerZ) / 2;
+        const key = `${topY.toFixed(3)}:${playCenterZ.toFixed(3)}:${aspect.toFixed(2)}`;
+
+        if (layoutKey.current === key) {
+            return;
+        }
+
+        layoutKey.current = key;
+
+        const distance = aspect > 1.8 ? 9 : aspect > 1.2 ? 10 : 11;
+
+        camera.position.set(0, topY + distance * 0.92, playerZ + distance * 0.62);
+        camera.fov = aspect > 1.5 ? 36 : 34;
         camera.near = 0.1;
-        camera.far = 100;
-        camera.lookAt(0, 0, TABLE_RADIUS * 0.28);
+        camera.far = 200;
+        camera.lookAt(0, topY + 0.02, playCenterZ);
         camera.updateProjectionMatrix();
-    }, [aspect, camera]);
+
+        if (controlsRef.current) {
+            controlsRef.current.target.set(0, topY + 0.02, playCenterZ);
+            controlsRef.current.update();
+        }
+    });
+
+    const playCenterZ = (tableLayout.playerZ + tableLayout.dealerZ) / 2;
 
     return (
         <OrbitControls
+            ref={controlsRef}
             enablePan={false}
-            minPolarAngle={Math.PI / 5}
-            maxPolarAngle={Math.PI / 2.15}
-            minDistance={7}
-            maxDistance={14}
-            target={[0, 0, TABLE_RADIUS * 0.28]}
+            minPolarAngle={Math.PI / 4.2}
+            maxPolarAngle={Math.PI / 2.35}
+            minDistance={7.5}
+            maxDistance={20}
+            target={[0, tableLayout.topY + 0.02, playCenterZ]}
         />
     );
 }
 
 function SceneContents() {
     const {
-        playerCards,
+        playerHands,
         dealerCards,
         showHoleCard,
         cardsRemaining,
+        totalCardsInShoe,
         isDeckShuffled,
     } = useGameContext();
 
-    const hasCards = playerCards.length > 0 || dealerCards.length > 0;
+    const hasCards =
+        playerHands.some((hand) => hand.cards.length > 0) || dealerCards.length > 0;
+
+    const splitOffsets = [-1.35, 1.35];
 
     return (
         <>
-            <PerspectiveCamera makeDefault position={[0, 7, 6]} fov={50} />
+            <PerspectiveCamera makeDefault position={[0, 4.5, 7]} fov={42} />
             <CameraRig />
 
             <ambientLight intensity={0.35} />
@@ -78,11 +104,12 @@ function SceneContents() {
 
             <CasinoTable />
 
-            {isDeckShuffled && (
+            {isDeckShuffled && cardsRemaining > 0 && (
                 <DeckStack3D
-                    position={[TABLE_RADIUS * 0.72, 0, -0.8]}
+                    position={tableLayout.deckPosition}
                     backSrc={facedown}
-                    cardCount={Math.max(3, Math.floor(cardsRemaining / 6))}
+                    cardsRemaining={cardsRemaining}
+                    totalCards={totalCardsInShoe}
                 />
             )}
 
@@ -92,29 +119,33 @@ function SceneContents() {
                         handId="dealer"
                         cards={dealerCards}
                         backSrc={facedown}
-                        zPosition={-0.35}
+                        zPosition={tableLayout.dealerZ}
                         showHoleCard={showHoleCard}
                         holeCardIndex={1}
                         dealOffset={0}
                     />
-                    <CardHand3D
-                        handId="player"
-                        cards={playerCards}
-                        backSrc={facedown}
-                        zPosition={TABLE_RADIUS * 0.48}
-                        showHoleCard
-                        holeCardIndex={-1}
-                        dealOffset={dealerCards.length}
-                    />
+                    {playerHands.map((hand, index) => (
+                        <CardHand3D
+                            key={hand.id}
+                            handId={`player-${index}`}
+                            cards={hand.cards}
+                            backSrc={facedown}
+                            zPosition={tableLayout.playerZ}
+                            xOffset={playerHands.length > 1 ? splitOffsets[index] ?? 0 : 0}
+                            showHoleCard
+                            holeCardIndex={-1}
+                            dealOffset={dealerCards.length + index * 2}
+                        />
+                    ))}
                 </>
             )}
 
             <ContactShadows
-                position={[0, 0.005, 1.5]}
+                position={[0, 0.005, tableLayout.playerZ * 0.4]}
                 opacity={0.5}
-                scale={TABLE_RADIUS * 2.4}
+                scale={tableLayout.radius * 2.2}
                 blur={2.5}
-                far={8}
+                far={12}
             />
         </>
     );

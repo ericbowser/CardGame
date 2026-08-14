@@ -3,9 +3,9 @@ import { animated, useSpring } from '@react-spring/three';
 import { useLayoutEffect } from 'react';
 import * as THREE from 'three';
 
-export const CARD_WIDTH = 1.15;
-export const CARD_HEIGHT = 1.61;
-export const CARD_LIFT = 0.018;
+export const CARD_WIDTH = 0.88;
+export const CARD_HEIGHT = 1.23;
+export const CARD_LIFT = 0.014;
 
 const AnimatedMesh = animated('mesh');
 

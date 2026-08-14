@@ -1,109 +1,79 @@
-import { useMemo } from 'react';
-import { Text } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
+import { useLayoutEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import tableModelUrl from '../../assets/blackjack_table.glb';
+import { updateTableLayout } from './tableLayout';
 
 export const TABLE_RADIUS = 7.5;
-const RAIL_WIDTH = 0.35;
+const TARGET_WIDTH = 10;
+/** World-space height for the felt surface after fit. */
+const FELT_SURFACE_Y = 0.72;
+/** This Sketchfab GLB already faces +Z; player curve toward camera needs no Y spin. */
+const TABLE_Y_ROTATION = 0;
 
-function createSemicircleGeometry(radius, segments = 64) {
-    return new THREE.CircleGeometry(radius, segments, Math.PI, Math.PI);
-}
+useGLTF.preload(tableModelUrl);
 
-function createSemicircleRingGeometry(innerRadius, outerRadius) {
-    const shape = new THREE.Shape();
-    shape.moveTo(-outerRadius, 0);
-    shape.absarc(0, 0, outerRadius, Math.PI, 0, false);
-    shape.lineTo(innerRadius, 0);
-    shape.absarc(0, 0, innerRadius, 0, Math.PI, true);
-    shape.lineTo(-outerRadius, 0);
+function fitTableToScene(table) {
+    table.rotation.set(0, 0, 0);
+    table.scale.set(1, 1, 1);
+    table.position.set(0, 0, 0);
+    table.updateMatrixWorld(true);
 
-    const geometry = new THREE.ShapeGeometry(shape);
-    geometry.rotateX(-Math.PI / 2);
-    return geometry;
-}
+    let box = new THREE.Box3().setFromObject(table);
+    let size = box.getSize(new THREE.Vector3());
 
-function SemicircleMesh({ radius, material, y = 0, castShadow, receiveShadow }) {
-    const geometry = useMemo(() => createSemicircleGeometry(radius), [radius]);
+    // Lay flat if the model was exported standing upright.
+    if (size.y > size.x * 1.2 && size.y > size.z * 1.2) {
+        table.rotation.x = -Math.PI / 2;
+        table.updateMatrixWorld(true);
+        box = new THREE.Box3().setFromObject(table);
+        size = box.getSize(new THREE.Vector3());
+    }
 
-    return (
-        <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, y, 0]}
-            castShadow={castShadow}
-            receiveShadow={receiveShadow}
-            geometry={geometry}
-            material={material}
-        />
-    );
+    // Face the player edge toward +Z.
+    table.rotation.y = TABLE_Y_ROTATION;
+    table.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(table);
+    size = box.getSize(new THREE.Vector3());
+
+    const scale = TARGET_WIDTH / Math.max(size.x, size.z, 0.001);
+    table.scale.setScalar(scale);
+    table.updateMatrixWorld(true);
+
+    box = new THREE.Box3().setFromObject(table);
+    const center = box.getCenter(new THREE.Vector3());
+    // Align felt to a fixed height; pedestal extends below y = 0.
+    table.position.set(-center.x, -box.max.y + FELT_SURFACE_Y, -center.z);
+    table.updateMatrixWorld(true);
+
+    box = new THREE.Box3().setFromObject(table);
+    const depth = box.max.z - box.min.z;
+    const width = box.max.x - box.min.x;
+    const topY = box.max.y + 0.015;
+
+    updateTableLayout({
+        topY,
+        dealerZ: box.min.z + depth * 0.28,
+        playerZ: box.min.z + depth * 0.66,
+        deckPosition: [box.min.x + width * 0.78, topY + 0.02, box.min.z + depth * 0.22],
+        radius: Math.max(size.x, size.z) * scale * 0.5,
+    });
 }
 
 export function CasinoTable() {
-    const railGeometry = useMemo(
-        () => createSemicircleRingGeometry(TABLE_RADIUS, TABLE_RADIUS + RAIL_WIDTH),
-        []
-    );
+    const { scene } = useGLTF(tableModelUrl);
+    const table = useMemo(() => scene.clone(true), [scene]);
 
-    const goldRingGeometry = useMemo(
-        () => createSemicircleRingGeometry(TABLE_RADIUS - 0.2, TABLE_RADIUS - 0.02),
-        []
-    );
+    useLayoutEffect(() => {
+        table.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
 
-    const feltRadius = TABLE_RADIUS - 0.15;
+        fitTableToScene(table);
+    }, [table]);
 
-    return (
-        <group>
-            <mesh
-                geometry={railGeometry}
-                position={[0, -0.08, 0]}
-                castShadow
-                receiveShadow
-            >
-                <meshStandardMaterial color="#141010" roughness={0.55} metalness={0.25} />
-            </mesh>
-
-            <SemicircleMesh
-                radius={TABLE_RADIUS}
-                y={0.001}
-                receiveShadow
-                material={
-                    <meshStandardMaterial color="#0a2a21" roughness={0.96} metalness={0.02} />
-                }
-            />
-
-            <SemicircleMesh
-                radius={feltRadius}
-                y={0.003}
-                receiveShadow
-                material={
-                    <meshStandardMaterial color="#0f4536" roughness={0.94} metalness={0.03} />
-                }
-            />
-
-            <mesh geometry={goldRingGeometry} position={[0, 0.004, 0]} receiveShadow>
-                <meshStandardMaterial color="#c9a227" roughness={0.45} metalness={0.55} />
-            </mesh>
-
-            <Text
-                position={[0, 0.02, -0.55]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                fontSize={0.16}
-                color="#8ab5a8"
-                anchorX="center"
-                anchorY="middle"
-            >
-                DEALER
-            </Text>
-
-            <Text
-                position={[0, 0.02, 3.8]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                fontSize={0.16}
-                color="#8ab5a8"
-                anchorX="center"
-                anchorY="middle"
-            >
-                PLAYER
-            </Text>
-        </group>
-    );
+    return <primitive object={table} />;
 }

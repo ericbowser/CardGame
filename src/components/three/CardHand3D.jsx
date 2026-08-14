@@ -1,6 +1,12 @@
-import { CARD_LIFT, PlayingCard3D } from './PlayingCard3D';
+import { CARD_LIFT, CARD_WIDTH, PlayingCard3D } from './PlayingCard3D';
+import { tableLayout } from './tableLayout';
 
-const CARD_SPACING = 0.42;
+/** Slight overlap for a natural fan; scales down when many cards. */
+function handSpacing(cardCount) {
+    const maxSpread = tableLayout.radius * 0.55;
+    const ideal = CARD_WIDTH * 0.58;
+    return Math.min(ideal, maxSpread / Math.max(cardCount, 1));
+}
 
 export function CardHand3D({
     cards,
@@ -10,18 +16,20 @@ export function CardHand3D({
     holeCardIndex = -1,
     dealOffset = 0,
     handId = 'hand',
+    xOffset = 0,
 }) {
     if (!cards?.length) {
         return null;
     }
 
-    const startX = -((cards.length - 1) * CARD_SPACING) / 2;
+    const spacing = handSpacing(cards.length);
+    const startX = -((cards.length - 1) * spacing) / 2;
 
     return cards.map((cardSrc, index) => {
-        const x = startX + index * CARD_SPACING;
+        const x = startX + index * spacing + xOffset;
         const tilt = (index - (cards.length - 1) / 2) * 0.045;
         const isHoleCard = holeCardIndex >= 0 && index === holeCardIndex && !showHoleCard;
-        const lift = CARD_LIFT + index * 0.003;
+        const lift = tableLayout.topY + CARD_LIFT + index * 0.003;
 
         return (
             <PlayingCard3D
@@ -32,6 +40,7 @@ export function CardHand3D({
                 targetRotationZ={tilt}
                 faceDown={isHoleCard}
                 dealIndex={dealOffset + index}
+                deckOrigin={tableLayout.deckPosition}
             />
         );
     });
