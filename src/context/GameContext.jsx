@@ -1,4 +1,12 @@
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import React, {
+    createContext,
+    startTransition,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {
     DEFAULT_BET,
     DEFAULT_DECK_COUNT,
@@ -19,6 +27,8 @@ import {
 } from '../utils/countingUtils';
 import { buildShoe, shuffleArray } from '../utils/deckUtils';
 import { preloadGameTextures } from '../utils/texturePreload';
+import { yieldToMain, yieldToPaint } from '../utils/yieldToMain';
+import { TableVisualContext } from './tableVisualContext';
 import {
     canSplitHand,
     createPlayerHand,
@@ -42,8 +52,10 @@ export const GameProvider = ({ children }) => {
     const [alertMessage, setAlertMessage] = useState(null);
 
     const [deck, setDeck] = useState([]);
-    const [shuffledDeck, setShuffledDeck] = useState([]);
+    const [cardsRemaining, setCardsRemaining] = useState(0);
     const [isDeckShuffled, setIsDeckShuffled] = useState(false);
+    const [boardBusy, setBoardBusy] = useState(false);
+    const [boardBusyMessage, setBoardBusyMessage] = useState('');
     const [deckCount, setDeckCountState] = useState(DEFAULT_DECK_COUNT);
     const [totalCardsInShoe, setTotalCardsInShoe] = useState(getShoeSize(DEFAULT_DECK_COUNT));
 
@@ -83,13 +95,23 @@ export const GameProvider = ({ children }) => {
     const imagesLoadingRef = useRef(false);
     const imagesLoadedRef = useRef(false);
     const runningCountRef = useRef(0);
+    const cardsSeenRef = useRef(0);
+    const pendingCountEventsRef = useRef([]);
     const holeCardCountedRef = useRef(false);
     const playerHandsRef = useRef([]);
+    const dealerCardsRef = useRef([]);
     const activeHandIndexRef = useRef(0);
+    const boardBusyRef = useRef(false);
 
     const updateShuffledDeck = (cards) => {
         shuffledDeckRef.current = cards;
-        setShuffledDeck(cards);
+        setCardsRemaining(cards.length);
+    };
+
+    const takeCard = () => shuffledDeckRef.current.pop();
+
+    const syncShoeCount = () => {
+        setCardsRemaining(shuffledDeckRef.current.length);
     };
 
     const syncPlayerHands = (hands) => {
@@ -97,7 +119,6 @@ export const GameProvider = ({ children }) => {
         setPlayerHands(hands);
     };
 
-    const cardsRemaining = shuffledDeck.length;
     const decksRemaining = Math.max(Math.round((cardsRemaining / FULL_DECK_SIZE) * 10) / 10, 0.1);
     const trueCount = calculateTrueCount(runningCount, cardsRemaining, FULL_DECK_SIZE);
     const penetration = totalCardsInShoe
@@ -138,10 +159,27 @@ export const GameProvider = ({ children }) => {
 
     const resetCounting = () => {
         runningCountRef.current = 0;
+        cardsSeenRef.current = 0;
+        pendingCountEventsRef.current = [];
         holeCardCountedRef.current = false;
         setRunningCount(0);
         setCardsSeen(0);
         setCountEvents([]);
+    };
+
+    const flushCounts = () => {
+        const nextRunningCount = runningCountRef.current;
+        const nextCardsSeen = cardsSeenRef.current;
+        const pending = pendingCountEventsRef.current;
+        pendingCountEventsRef.current = [];
+
+        startTransition(() => {
+            setRunningCount(nextRunningCount);
+            setCardsSeen(nextCardsSeen);
+            if (pending.length > 0) {
+                setCountEvents((prev) => [...prev, ...pending].slice(-20));
+            }
+        });
     };
 
     const recordCount = (card, label) => {
@@ -151,27 +189,42 @@ export const GameProvider = ({ children }) => {
 
         const delta = getHiLoCount(card);
         runningCountRef.current += delta;
-        const nextRunningCount = runningCountRef.current;
-
-        setRunningCount(nextRunningCount);
-        setCardsSeen((prev) => prev + 1);
-        setCountEvents((prev) => [
-            ...prev.slice(-19),
-            {
-                id: `${Date.now()}-${Math.random()}`,
-                label,
-                cardName: getCardShortName(card),
-                delta,
-                runningCount: nextRunningCount,
-            },
-        ]);
+        cardsSeenRef.current += 1;
+        pendingCountEventsRef.current.push({
+            id: `${Date.now()}-${Math.random()}`,
+            label,
+            cardName: getCardShortName(card),
+            delta,
+            runningCount: runningCountRef.current,
+        });
 
         if (delta !== 0) {
             addLog(
-                `Hi-Lo ${delta > 0 ? '+' : ''}${delta}: ${getCardShortName(card)} (${label}). Running: ${nextRunningCount}`,
+                `Hi-Lo ${delta > 0 ? '+' : ''}${delta}: ${getCardShortName(card)} (${label}). Running: ${runningCountRef.current}`,
             );
         } else {
-            addLog(`Hi-Lo 0: ${getCardShortName(card)} (${label}). Running: ${nextRunningCount}`);
+            addLog(`Hi-Lo 0: ${getCardShortName(card)} (${label}). Running: ${runningCountRef.current}`);
+        }
+    };
+
+    const runWithBoardBusy = async (message, work) => {
+        const alreadyBusy = boardBusyRef.current;
+        if (!alreadyBusy) {
+            boardBusyRef.current = true;
+            setBoardBusy(true);
+            setBoardBusyMessage(message);
+            await yieldToMain();
+        }
+
+        try {
+            await work();
+            await yieldToPaint();
+        } finally {
+            if (!alreadyBusy) {
+                boardBusyRef.current = false;
+                setBoardBusy(false);
+                setBoardBusyMessage('');
+            }
         }
     };
 
@@ -240,26 +293,28 @@ export const GameProvider = ({ children }) => {
     };
 
     const shuffleDeck = () => {
-        const sourceDeck = deckRef.current.length > 0 ? deckRef.current : deck;
-        if (!sourceDeck || sourceDeck.length === 0) {
-            addLog('No deck to shuffle.');
-            return;
-        }
+        runWithBoardBusy('Shuffling shoe…', async () => {
+            const sourceDeck = deckRef.current.length > 0 ? deckRef.current : deck;
+            if (!sourceDeck || sourceDeck.length === 0) {
+                addLog('No deck to shuffle.');
+                return;
+            }
 
-        const shuffled = createShuffledShoe();
-        const shoeSize = getShoeSize(deckCountRef.current);
+            const shuffled = createShuffledShoe();
+            const shoeSize = getShoeSize(deckCountRef.current);
 
-        shuffledDeckRef.current = shuffled;
-        setShuffledDeck(shuffled);
-        setTotalCardsInShoe(shoeSize);
-        setIsDeckShuffled(true);
-        setGameState(null);
-        setDeckWins(0);
-        setDeckLosses(0);
-        setDeckPushes(0);
-        setDeckBlackjacks(0);
-        resetCounting();
-        addLog(`Shoe shuffled (${deckCountRef.current}-deck, ${shoeSize} cards). Session stats reset.`);
+            shuffledDeckRef.current = shuffled;
+            setCardsRemaining(shuffled.length);
+            setTotalCardsInShoe(shoeSize);
+            setIsDeckShuffled(true);
+            setGameState(null);
+            setDeckWins(0);
+            setDeckLosses(0);
+            setDeckPushes(0);
+            setDeckBlackjacks(0);
+            resetCounting();
+            addLog(`Shoe shuffled (${deckCountRef.current}-deck, ${shoeSize} cards). Session stats reset.`);
+        });
     };
 
     const handleHandWin = (hand, isBlackjack = false) => {
@@ -308,11 +363,10 @@ export const GameProvider = ({ children }) => {
             return false;
         }
 
-        const deckCopy = [...shuffledDeckRef.current];
-        const newCard = deckCopy.pop();
+        const newCard = takeCard();
         hand.cards.push(newCard);
         hand.awaitingSplitDeal = false;
-        updateShuffledDeck(deckCopy);
+        syncShoeCount();
         recordCount(newCard, `Split hand ${handIndex + 1} deal`);
 
         const value = calculateHandValue(hand.cards);
@@ -380,13 +434,11 @@ export const GameProvider = ({ children }) => {
         setGameState(GameState.DealerPhase);
     };
 
-    const dealInitialCards = (deckOverride) => {
+    const dealInitialCards = () => {
         addLog('Dealing cards...');
 
-        const sourceDeck = deckOverride ?? shuffledDeckRef.current;
-        const deckCopy = [...sourceDeck];
-        const pCards = [deckCopy.pop(), deckCopy.pop()];
-        const dCards = [deckCopy.pop(), deckCopy.pop()];
+        const pCards = [takeCard(), takeCard()];
+        const dCards = [takeCard(), takeCard()];
         const initialBet = roundBetRef.current;
 
         const hands = [createPlayerHand(pCards, initialBet)];
@@ -395,8 +447,9 @@ export const GameProvider = ({ children }) => {
         setActiveHandIndex(0);
 
         setDealerCards(dCards);
+        dealerCardsRef.current = dCards;
         holeCardCountedRef.current = false;
-        updateShuffledDeck(deckCopy);
+        syncShoeCount();
 
         countVisibleCards(pCards, 'Player card');
         recordCount(dCards[0], 'Dealer up card');
@@ -441,6 +494,8 @@ export const GameProvider = ({ children }) => {
             addLog("Player's turn.");
             setGameState(GameState.PlayerPhase);
         }
+
+        flushCounts();
     };
 
     const playerHit = () => {
@@ -457,10 +512,9 @@ export const GameProvider = ({ children }) => {
 
         addLog(`Hand ${handIndex + 1} hits.`);
 
-        const deckCopy = [...shuffledDeckRef.current];
-        const newCard = deckCopy.pop();
+        const newCard = takeCard();
         hand.cards.push(newCard);
-        updateShuffledDeck(deckCopy);
+        syncShoeCount();
         recordCount(newCard, `Player hand ${handIndex + 1} hit`);
 
         const newValue = calculateHandValue(hand.cards);
@@ -471,10 +525,12 @@ export const GameProvider = ({ children }) => {
             handleHandLoss(hand);
             syncPlayerHands(hands);
             advancePlayerTurn(hands);
+            flushCounts();
             return;
         }
 
         syncPlayerHands(hands);
+        flushCounts();
     };
 
     const playerStay = () => {
@@ -493,54 +549,57 @@ export const GameProvider = ({ children }) => {
         addLog(`Hand ${handIndex + 1} stays at ${calculateHandValue(hand.cards)}.`);
         syncPlayerHands(hands);
         advancePlayerTurn(hands);
+        flushCounts();
     };
 
     const playerSplit = () => {
-        const hands = playerHandsRef.current.map((hand) => ({
-            ...hand,
-            cards: [...hand.cards],
-        }));
-        const handIndex = activeHandIndexRef.current;
-        const hand = hands[handIndex];
+        runWithBoardBusy('Splitting hands…', async () => {
+            const hands = playerHandsRef.current.map((hand) => ({
+                ...hand,
+                cards: [...hand.cards],
+            }));
+            const handIndex = activeHandIndexRef.current;
+            const hand = hands[handIndex];
 
-        if (!canSplitHand(hand, hands, playerChips, TABLE_RULES)) {
-            return;
-        }
+            if (!canSplitHand(hand, hands, playerChips, TABLE_RULES)) {
+                return;
+            }
 
-        const splitBet = hand.bet;
-        setPlayerChips((prev) => prev - splitBet);
-        setCurrentBet((prev) => prev + splitBet);
-        roundBetRef.current += splitBet;
+            const splitBet = hand.bet;
+            setPlayerChips((prev) => prev - splitBet);
+            setCurrentBet((prev) => prev + splitBet);
+            roundBetRef.current += splitBet;
 
-        const [cardA, cardB] = hand.cards;
-        const handA = createPlayerHand([cardA], splitBet);
-        const handB = createPlayerHand([cardB], splitBet, { awaitingSplitDeal: true });
-        hands.splice(handIndex, 1, handA, handB);
+            const [cardA, cardB] = hand.cards;
+            const handA = createPlayerHand([cardA], splitBet);
+            const handB = createPlayerHand([cardB], splitBet, { awaitingSplitDeal: true });
+            hands.splice(handIndex, 1, handA, handB);
 
-        const deckCopy = [...shuffledDeckRef.current];
+            if (isAcePair(handA) && TABLE_RULES.splitAcesOneCard) {
+                handA.cards.push(takeCard());
+                handB.cards.push(takeCard());
+                handB.awaitingSplitDeal = false;
+                recordCount(handA.cards[1], 'Split ace hand 1');
+                recordCount(handB.cards[1], 'Split ace hand 2');
+                handA.status = HandStatus.Stand;
+                handB.status = HandStatus.Stand;
+                syncShoeCount();
+                syncPlayerHands(hands);
+                activeHandIndexRef.current = 0;
+                setActiveHandIndex(0);
+                addLog('Split aces — one card each, standing.');
+                setGameState(GameState.DealerPhase);
+                flushCounts();
+                return;
+            }
 
-        if (isAcePair(handA) && TABLE_RULES.splitAcesOneCard) {
-            handA.cards.push(deckCopy.pop());
-            handB.cards.push(deckCopy.pop());
-            handB.awaitingSplitDeal = false;
-            recordCount(handA.cards[1], 'Split ace hand 1');
-            recordCount(handB.cards[1], 'Split ace hand 2');
-            handA.status = HandStatus.Stand;
-            handB.status = HandStatus.Stand;
-            updateShuffledDeck(deckCopy);
-            syncPlayerHands(hands);
-            activeHandIndexRef.current = 0;
-            setActiveHandIndex(0);
-            addLog('Split aces — one card each, standing.');
-            setGameState(GameState.DealerPhase);
-            return;
-        }
-
-        const splitCard = deckCopy.pop();
-        handA.cards.push(splitCard);
-        recordCount(splitCard, 'Split hand 1 deal');
-        updateShuffledDeck(deckCopy);
-        finishSplitHandA(hands, handIndex);
+            const splitCard = takeCard();
+            handA.cards.push(splitCard);
+            recordCount(splitCard, 'Split hand 1 deal');
+            syncShoeCount();
+            finishSplitHandA(hands, handIndex);
+            flushCounts();
+        });
     };
 
     const resolveHandsAgainstDealer = (dealerFinalCount, dealerBusted) => {
@@ -592,25 +651,28 @@ export const GameProvider = ({ children }) => {
     };
 
     const dealerTurn = () => {
+        const startingCards = dealerCardsRef.current;
         setShowHoleCard(true);
         addLog("Dealer's turn.");
-        countHoleCardIfNeeded(dealerCards);
+        countHoleCardIfNeeded(startingCards);
+        flushCounts();
 
-        let currentDealerCards = [...dealerCards];
+        let currentDealerCards = [...startingCards];
         let currentDealerCount = calculateHandValue(currentDealerCards);
-        let deckCopy = [...shuffledDeckRef.current];
 
         const play = () => {
             if (currentDealerCount < TABLE_RULES.dealerStandsOn) {
                 addLog(`Dealer has ${currentDealerCount} and hits.`);
 
-                const newCard = deckCopy.pop();
+                const newCard = takeCard();
                 currentDealerCards.push(newCard);
                 currentDealerCount = calculateHandValue(currentDealerCards);
+                dealerCardsRef.current = currentDealerCards;
                 setDealerCards([...currentDealerCards]);
                 setDealerCount(currentDealerCount);
-                updateShuffledDeck([...deckCopy]);
+                syncShoeCount();
                 recordCount(newCard, 'Dealer hit');
+                flushCounts();
                 setTimeout(play, 1000);
             } else {
                 addLog(`Dealer stands with ${currentDealerCount}.`);
@@ -659,6 +721,7 @@ export const GameProvider = ({ children }) => {
         activeHandIndexRef.current = 0;
         setActiveHandIndex(0);
         setDealerCards([]);
+        dealerCardsRef.current = [];
         setDealerCount(0);
         setShowHoleCard(false);
         setPlayerBust(false);
@@ -707,22 +770,27 @@ export const GameProvider = ({ children }) => {
                 addLog(`Invalid bet amount: $${betAmountOverride}`);
                 return false;
             }
-
-            setPlayerChips((prev) => prev - betAmountOverride);
-            setCurrentBet(betAmountOverride);
-            setLastBetAmount(betAmountOverride);
-            setBetAmount(betAmountOverride);
-            roundBetRef.current = betAmountOverride;
-            addLog(`Bet placed: $${betAmountOverride}`);
         }
 
-        if (roundOver) {
-            addLog('--- Starting New Round ---');
-        }
+        runWithBoardBusy('Dealing cards…', async () => {
+            if (betAmountOverride !== undefined) {
+                setPlayerChips((prev) => prev - betAmountOverride);
+                setCurrentBet(betAmountOverride);
+                setLastBetAmount(betAmountOverride);
+                setBetAmount(betAmountOverride);
+                roundBetRef.current = betAmountOverride;
+                addLog(`Bet placed: $${betAmountOverride}`);
+            }
 
-        resetRoundState();
-        const deckToUse = reshuffleIfLow();
-        dealInitialCards(deckToUse);
+            if (roundOver) {
+                addLog('--- Starting New Round ---');
+            }
+
+            resetRoundState();
+            reshuffleIfLow();
+            dealInitialCards();
+        });
+
         return true;
     };
 
@@ -755,6 +823,7 @@ export const GameProvider = ({ children }) => {
         activeHandIndexRef.current = 0;
         setActiveHandIndex(0);
         setDealerCards([]);
+        dealerCardsRef.current = [];
         setDealerCount(0);
         setShowHoleCard(false);
         setPlayerChips(DEFAULT_STARTING_CHIPS);
@@ -781,8 +850,6 @@ export const GameProvider = ({ children }) => {
         addLog,
         deck,
         setDeck,
-        shuffledDeck,
-        setShuffledDeck,
         isDeckShuffled,
         setIsDeckShuffled,
         deckCount,
@@ -829,10 +896,41 @@ export const GameProvider = ({ children }) => {
         trueCount,
         countEvents,
         cardsSeen,
+        boardBusy,
+        boardBusyMessage,
         tableRules: TABLE_RULES,
     };
 
-    return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+    const tableVisual = useMemo(
+        () => ({
+            playerHands,
+            dealerCards,
+            showHoleCard,
+            cardsRemaining: cardsRemaining > 0 ? Math.max(8, Math.ceil(cardsRemaining / 8) * 8) : 0,
+            totalCardsInShoe,
+            isDeckShuffled,
+            boardBusy,
+            boardBusyMessage,
+        }),
+        [
+            playerHands,
+            dealerCards,
+            showHoleCard,
+            cardsRemaining,
+            totalCardsInShoe,
+            isDeckShuffled,
+            boardBusy,
+            boardBusyMessage,
+        ],
+    );
+
+    return (
+        <GameContext.Provider value={value}>
+            <TableVisualContext.Provider value={tableVisual}>
+                {children}
+            </TableVisualContext.Provider>
+        </GameContext.Provider>
+    );
 };
 
 export default GameProvider;

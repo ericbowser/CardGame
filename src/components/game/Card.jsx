@@ -1,11 +1,7 @@
-import { memo } from 'react';
 import { GameState, Who } from '../../constants/game';
 import { useGameContext } from '../../context';
-import { useTableSceneState } from '../../hooks/useTableSceneState';
 import { calculateHandValue } from '../../utils/cardUtils';
-import BlackjackScene from '../three/BlackjackScene';
-
-const MemoBlackjackScene = memo(BlackjackScene);
+import TableCanvas from '../three/TableCanvas';
 
 function Card() {
     const {
@@ -27,9 +23,8 @@ function Card() {
         playerSplit,
         canSplit,
         quickDeal,
+        boardBusy,
     } = useGameContext();
-
-    const tableSceneState = useTableSceneState();
 
     const getGameStatusMessage = () => {
         if (!gameState) {
@@ -109,7 +104,7 @@ function Card() {
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden bg-[#060606]">
-                <MemoBlackjackScene {...tableSceneState} />
+                <TableCanvas />
             </div>
 
             {!isDeckShuffled && (
@@ -120,7 +115,8 @@ function Card() {
                     </p>
                     <button
                         type="button"
-                        className="rounded-xl bg-amber-500 px-6 py-2 text-sm font-bold text-black transition hover:bg-amber-400"
+                        className="rounded-xl bg-amber-500 px-6 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        disabled={boardBusy}
                         onClick={shuffleDeck}
                     >
                         Shuffle Deck
@@ -138,21 +134,23 @@ function Card() {
                         <div className="mx-auto flex w-full max-w-xl justify-center gap-1.5 sm:gap-3">
                             <button
                                 type="button"
-                                className="min-w-0 flex-1 rounded-xl bg-white/15 px-2 py-2.5 text-sm font-bold text-white transition hover:bg-white/25 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
+                                disabled={boardBusy}
+                                className="min-w-0 flex-1 rounded-xl bg-white/15 px-2 py-2.5 text-sm font-bold text-white transition hover:bg-white/25 disabled:opacity-40 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerHit}
                             >
                                 Hit
                             </button>
                             <button
                                 type="button"
-                                className="min-w-0 flex-1 rounded-xl bg-amber-500 px-2 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
+                                disabled={boardBusy}
+                                className="min-w-0 flex-1 rounded-xl bg-amber-500 px-2 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerStay}
                             >
                                 Stay
                             </button>
                             <button
                                 type="button"
-                                disabled={!canSplit}
+                                disabled={!canSplit || boardBusy}
                                 className="min-w-0 flex-1 rounded-xl bg-violet-600 px-2 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[5.5rem] sm:px-4 sm:py-3 sm:text-lg"
                                 onClick={playerSplit}
                             >
@@ -169,8 +167,9 @@ function Card() {
                             {canDealAgain && (
                                 <button
                                     type="button"
+                                    disabled={boardBusy}
                                     onClick={quickDeal}
-                                    className="shrink-0 rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-500"
+                                    className="shrink-0 rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-500 disabled:opacity-40"
                                 >
                                     Deal Again (${betAmount})
                                 </button>

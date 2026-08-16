@@ -1,5 +1,5 @@
+import { memo, useLayoutEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
-import { useLayoutEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { CARD_HEIGHT, CARD_WIDTH } from './PlayingCard3D';
 
@@ -14,7 +14,7 @@ function configureCardTexture(texture) {
 }
 
 /** Procedural casino shoe + depleting card stack (no extra GLB required). */
-export function DeckStack3D({
+export const DeckStack3D = memo(function DeckStack3D({
     position = [3.4, 0, -2.4],
     backSrc,
     cardsRemaining = 52,
@@ -108,4 +108,4 @@ export function DeckStack3D({
             )}
         </group>
     );
-}
+});

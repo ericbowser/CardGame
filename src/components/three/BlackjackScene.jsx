@@ -4,12 +4,15 @@ import {
     ContactShadows,
     OrbitControls,
     PerspectiveCamera,
+    useTexture,
 } from '@react-three/drei';
 import facedown from '../../assets/facedown4.jpg';
 import { CardHand3D } from './CardHand3D';
 import { CasinoTable } from './CasinoTable';
 import { tableLayout } from './tableLayout';
 import { DeckStack3D } from './DeckStack3D';
+
+useTexture.preload(facedown);
 
 function CameraRig() {
     const { camera, size } = useThree();
@@ -62,6 +65,21 @@ function CameraRig() {
     );
 }
 
+function FirstFrameReady({ onReady }) {
+    const sent = useRef(false);
+
+    useFrame(() => {
+        if (sent.current) {
+            return;
+        }
+
+        sent.current = true;
+        queueMicrotask(() => onReady?.());
+    });
+
+    return null;
+}
+
 function SceneContents({
     playerHands,
     dealerCards,
@@ -69,6 +87,7 @@ function SceneContents({
     cardsRemaining,
     totalCardsInShoe,
     isDeckShuffled,
+    onSceneReady,
 }) {
     const hasCards =
         playerHands.some((hand) => hand.cards.length > 0) || dealerCards.length > 0;
@@ -79,38 +98,32 @@ function SceneContents({
         <>
             <PerspectiveCamera makeDefault position={[0, 4.5, 7]} fov={42} />
             <CameraRig />
+            <FirstFrameReady onReady={onSceneReady} />
 
-            <ambientLight intensity={0.38} />
+            <ambientLight intensity={0.42} />
             <hemisphereLight
-                intensity={0.28}
+                intensity={0.32}
                 color="#fff2dd"
                 groundColor="#0a0a0a"
             />
             <directionalLight
-                castShadow
-                intensity={1.1}
+                intensity={1.05}
                 position={[4, 10, 4]}
-                shadow-mapSize={[2048, 2048]}
             />
             <pointLight intensity={0.45} position={[-4, 5, 3]} color="#ffd9a0" />
-            <spotLight
-                intensity={0.65}
-                angle={0.45}
-                penumbra={0.5}
-                position={[0, 10, 2]}
-                castShadow
-            />
 
             <CasinoTable />
 
-            {isDeckShuffled && cardsRemaining > 0 && (
-                <DeckStack3D
-                    position={tableLayout.deckPosition}
-                    backSrc={facedown}
-                    cardsRemaining={cardsRemaining}
-                    totalCards={totalCardsInShoe}
-                />
-            )}
+            <Suspense fallback={null}>
+                {isDeckShuffled && cardsRemaining > 0 && (
+                    <DeckStack3D
+                        position={tableLayout.deckPosition}
+                        backSrc={facedown}
+                        cardsRemaining={cardsRemaining}
+                        totalCards={totalCardsInShoe}
+                    />
+                )}
+            </Suspense>
 
             {hasCards && (
                 <>
@@ -140,11 +153,12 @@ function SceneContents({
             )}
 
             <ContactShadows
+                frames={1}
                 position={[0, 0.005, tableLayout.playerZ * 0.4]}
-                opacity={0.5}
+                opacity={0.38}
                 scale={tableLayout.radius * 2.2}
-                blur={2.5}
-                far={12}
+                blur={1.8}
+                far={10}
             />
         </>
     );
@@ -159,12 +173,16 @@ function BlackjackScene({
     cardsRemaining,
     totalCardsInShoe,
     isDeckShuffled,
+    onSceneReady,
 }) {
     return (
         <Canvas
-            shadows
-            dpr={[1, 1.75]}
-            gl={{ antialias: true, powerPreference: 'high-performance' }}
+            dpr={[1, 1.5]}
+            gl={{
+                antialias: true,
+                powerPreference: 'high-performance',
+                stencil: false,
+            }}
             style={{ width: '100%', height: '100%' }}
         >
             <Suspense fallback={null}>
@@ -175,6 +193,7 @@ function BlackjackScene({
                     cardsRemaining={cardsRemaining}
                     totalCardsInShoe={totalCardsInShoe}
                     isDeckShuffled={isDeckShuffled}
+                    onSceneReady={onSceneReady}
                 />
             </Suspense>
         </Canvas>

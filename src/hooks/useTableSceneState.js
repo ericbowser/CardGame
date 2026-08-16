@@ -1,26 +1,11 @@
-import { useMemo } from 'react';
-import { useGameContext } from '../context';
+import { useContext } from 'react';
+import { TableVisualContext } from '../context/tableVisualContext';
 
-/** Narrow context slice so the 3D table only re-renders when table visuals change. */
+/** Table-only context so count/chip updates do not rebuild the 3D canvas. */
 export function useTableSceneState() {
-    const {
-        playerHands,
-        dealerCards,
-        showHoleCard,
-        cardsRemaining,
-        totalCardsInShoe,
-        isDeckShuffled,
-    } = useGameContext();
-
-    return useMemo(
-        () => ({
-            playerHands,
-            dealerCards,
-            showHoleCard,
-            cardsRemaining,
-            totalCardsInShoe,
-            isDeckShuffled,
-        }),
-        [playerHands, dealerCards, showHoleCard, cardsRemaining, totalCardsInShoe, isDeckShuffled],
-    );
+    const context = useContext(TableVisualContext);
+    if (!context) {
+        throw new Error('useTableSceneState must be used within a GameProvider');
+    }
+    return context;
 }

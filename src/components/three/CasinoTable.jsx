@@ -67,7 +67,7 @@ export function CasinoTable() {
     useLayoutEffect(() => {
         table.traverse((child) => {
             if (child.isMesh) {
-                child.castShadow = true;
+                child.castShadow = false;
                 child.receiveShadow = true;
             }
         });

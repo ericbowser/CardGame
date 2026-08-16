@@ -52,12 +52,7 @@ function PlayingCardMesh({
     );
 
     return (
-        <AnimatedMesh
-            position={position}
-            rotation={rotation}
-            castShadow
-            receiveShadow
-        >
+        <AnimatedMesh position={position} rotation={rotation}>
             <planeGeometry args={[CARD_WIDTH, CARD_HEIGHT]} />
             <meshStandardMaterial
                 map={faceMap}

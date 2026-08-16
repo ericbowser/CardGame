@@ -18,6 +18,7 @@ function BettingSystem() {
         placeBetAndDeal,
         betAmount,
         setBetAmount,
+        boardBusy,
     } = useGameContext();
 
     const chipValues = [5, 25, 50, 100];
@@ -27,7 +28,7 @@ function BettingSystem() {
         gameState === GameState.DealerPhase ||
         gameState === GameState.CardsDealt;
 
-    const canBet = isDeckShuffled && !isRoundActive;
+    const canBet = isDeckShuffled && !isRoundActive && !boardBusy;
 
     const clampBet = (value) => Math.min(Math.max(0, value), playerChips);
 

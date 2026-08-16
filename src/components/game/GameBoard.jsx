@@ -16,6 +16,7 @@ const GameBoard = () => {
         deckCount,
         setDeckCount,
         deckCountOptions,
+        boardBusy,
     } = useGameContext();
 
     return (
@@ -71,7 +72,8 @@ const GameBoard = () => {
                             {!isDeckShuffled && (
                                 <button
                                     type="button"
-                                    className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-medium text-black transition hover:bg-amber-400 sm:py-3"
+                                    className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-medium text-black transition hover:bg-amber-400 disabled:opacity-40 sm:py-3"
+                                    disabled={boardBusy}
                                     onClick={shuffleDeck}
                                 >
                                     Shuffle {deckCount}-Deck Shoe
