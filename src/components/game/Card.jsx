@@ -69,20 +69,14 @@ function Card() {
 
     return (
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl">
-            <div className="pointer-events-none absolute left-3 top-3 z-30 sm:left-4 sm:top-4">
+            <div className="pointer-events-none absolute left-3 top-3 z-30 hidden sm:block sm:left-4 sm:top-4">
                 <h1 className="text-lg font-bold tracking-[0.12em] text-amber-300/90 sm:text-2xl sm:tracking-[0.15em] lg:text-3xl">
                     BLACKJACK
                 </h1>
             </div>
 
-            <div
-                className={`pointer-events-none shrink-0 px-3 sm:px-4 lg:px-6 ${
-                    isDeckShuffled
-                        ? 'pb-1.5 pt-10 sm:pb-2 sm:pt-12 lg:pt-14'
-                        : 'min-h-0 p-0'
-                }`}
-            >
-                {isDeckShuffled && (
+            {isDeckShuffled && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-2 pt-2 sm:px-4 sm:pt-3 lg:px-6 lg:pt-4">
                     <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-3 py-1.5 text-center backdrop-blur-md sm:px-5 sm:py-3">
                         <p className="text-sm font-semibold tracking-wide text-white sm:text-base lg:text-lg">
                             {getGameStatusMessage()}
@@ -100,8 +94,8 @@ function Card() {
                             </span>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             <div className="min-h-0 flex-1 overflow-hidden bg-[#060606]">
                 <TableCanvas />
@@ -126,8 +120,8 @@ function Card() {
 
             {isDeckShuffled && (
                 <div
-                    className={`pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-3 backdrop-blur-md sm:p-4 ${
-                        showActionBar ? 'visible' : 'invisible min-h-[4.5rem]'
+                    className={`pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
+                        showActionBar ? 'visible' : 'invisible min-h-[3.75rem] sm:min-h-[4.5rem]'
                     }`}
                 >
                     {canPlayerAct && (

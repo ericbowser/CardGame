@@ -11,14 +11,15 @@ import { CardHand3D } from './CardHand3D';
 import { CasinoTable } from './CasinoTable';
 import { tableLayout } from './tableLayout';
 import { DeckStack3D } from './DeckStack3D';
+import { getViewportFraming, useIsNarrowViewport } from './viewportFraming';
 
 useTexture.preload(facedown);
 
 function CameraRig() {
     const { camera, size } = useThree();
     const controlsRef = useRef(null);
-    const aspect = size.width / size.height;
     const layoutKey = useRef('');
+    const framing = getViewportFraming(size.width, size.height);
 
     useFrame(() => {
         if (!camera.isPerspectiveCamera) {
@@ -26,8 +27,10 @@ function CameraRig() {
         }
 
         const { topY, playerZ, dealerZ } = tableLayout;
-        const playCenterZ = (playerZ + dealerZ) / 2;
-        const key = `${topY.toFixed(3)}:${playCenterZ.toFixed(3)}:${aspect.toFixed(2)}`;
+        const playCenterZ = framing.isPortrait
+            ? dealerZ * 0.42 + playerZ * 0.58
+            : (playerZ + dealerZ) / 2;
+        const key = `${topY.toFixed(3)}:${playCenterZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
 
         if (layoutKey.current === key) {
             return;
@@ -35,10 +38,12 @@ function CameraRig() {
 
         layoutKey.current = key;
 
-        const distance = aspect > 1.8 ? 9 : aspect > 1.2 ? 10 : 11;
-
-        camera.position.set(0, topY + distance * 0.92, playerZ + distance * 0.62);
-        camera.fov = aspect > 1.5 ? 36 : 34;
+        camera.position.set(
+            0,
+            topY + framing.distance * framing.heightMul,
+            playerZ + framing.distance * framing.zMul,
+        );
+        camera.fov = framing.fov;
         camera.near = 0.1;
         camera.far = 200;
         camera.lookAt(0, topY + 0.02, playCenterZ);
@@ -50,16 +55,19 @@ function CameraRig() {
         }
     });
 
-    const playCenterZ = (tableLayout.playerZ + tableLayout.dealerZ) / 2;
+    const playCenterZ = framing.isPortrait
+        ? tableLayout.dealerZ * 0.42 + tableLayout.playerZ * 0.58
+        : (tableLayout.playerZ + tableLayout.dealerZ) / 2;
 
     return (
         <OrbitControls
             ref={controlsRef}
+            enabled={framing.enableOrbit}
             enablePan={false}
             minPolarAngle={Math.PI / 4.2}
             maxPolarAngle={Math.PI / 2.35}
-            minDistance={7.5}
-            maxDistance={20}
+            minDistance={framing.minDistance}
+            maxDistance={framing.maxDistance}
             target={[0, tableLayout.topY + 0.02, playCenterZ]}
         />
     );
@@ -89,10 +97,11 @@ function SceneContents({
     isDeckShuffled,
     onSceneReady,
 }) {
+    const { size } = useThree();
+    const framing = getViewportFraming(size.width, size.height);
     const hasCards =
         playerHands.some((hand) => hand.cards.length > 0) || dealerCards.length > 0;
-
-    const splitOffsets = [-1.35, 1.35];
+    const splitOffsets = [-framing.splitOffset, framing.splitOffset];
 
     return (
         <>
@@ -175,15 +184,17 @@ function BlackjackScene({
     isDeckShuffled,
     onSceneReady,
 }) {
+    const isMobile = useIsNarrowViewport();
+
     return (
         <Canvas
-            dpr={[1, 1.5]}
+            dpr={isMobile ? [1, 1.15] : [1, 1.5]}
             gl={{
-                antialias: true,
+                antialias: !isMobile,
                 powerPreference: 'high-performance',
                 stencil: false,
             }}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '100%', touchAction: isMobile ? 'pan-y' : 'none' }}
         >
             <Suspense fallback={null}>
                 <MemoSceneContents

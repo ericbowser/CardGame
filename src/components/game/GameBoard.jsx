@@ -22,15 +22,15 @@ const GameBoard = () => {
     return (
         <div className="flex flex-col lg:h-full lg:min-h-0 lg:flex-1">
             <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch">
-                {/* Table first on mobile */}
-                <div className="order-1 flex min-h-[min(46vh,400px)] flex-col lg:order-2 lg:min-h-0 lg:min-w-0 lg:flex-1">
+                {/* Table first and taller on mobile so the felt can fill the frame */}
+                <div className="order-1 flex min-h-[min(68dvh,580px)] flex-col lg:order-2 lg:min-h-0 lg:min-w-0 lg:flex-1">
                     {alertMessage && (
                         <div className="mb-2 shrink-0 rounded-lg border border-amber-400/50 bg-amber-500/20 p-2 text-center text-sm font-bold text-amber-100 backdrop-blur-md lg:mb-3">
                             {alertMessage}
                         </div>
                     )}
 
-                    <div className="min-h-[min(42vh,360px)] flex-1 lg:min-h-0">
+                    <div className="min-h-[min(62dvh,540px)] flex-1 lg:min-h-0">
                         <Card />
                     </div>
                 </div>
