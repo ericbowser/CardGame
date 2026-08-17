@@ -11,7 +11,7 @@ import { CardHand3D } from './CardHand3D';
 import { CasinoTable } from './CasinoTable';
 import { tableLayout } from './tableLayout';
 import { DeckStack3D } from './DeckStack3D';
-import { getViewportFraming, useIsNarrowViewport } from './viewportFraming';
+import { getOverheadCameraPose, getViewportFraming, useIsNarrowViewport } from './viewportFraming';
 
 useTexture.preload(facedown);
 
@@ -27,17 +27,35 @@ function CameraRig() {
         }
 
         const { topY, playerZ, dealerZ } = tableLayout;
-        const playCenterZ = framing.isPortrait
-            ? dealerZ * 0.42 + playerZ * 0.58
-            : (playerZ + dealerZ) / 2;
-        const key = `${topY.toFixed(3)}:${playCenterZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
+        const shouldLock = !framing.enableOrbit;
+        const key = `${shouldLock ? 'lock' : 'orbit'}:${topY.toFixed(3)}:${playerZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
 
-        if (layoutKey.current === key) {
+        if (!shouldLock && layoutKey.current === key) {
             return;
         }
 
         layoutKey.current = key;
 
+        if (shouldLock) {
+            const pose = getOverheadCameraPose(
+                size.width,
+                size.height,
+                tableLayout,
+                framing.splitOffset,
+            );
+            // Straight-down lookAt with default up=(0,1,0) is degenerate — table becomes a tiny oval.
+            camera.up.set(0, 0, -1);
+            camera.position.set(...pose.position);
+            camera.fov = pose.fov;
+            camera.near = 0.08;
+            camera.far = 80;
+            camera.lookAt(...pose.target);
+            camera.updateProjectionMatrix();
+            return;
+        }
+
+        camera.up.set(0, 1, 0);
+        const lookZ = (playerZ + dealerZ) / 2;
         camera.position.set(
             0,
             topY + framing.distance * framing.heightMul,
@@ -46,29 +64,30 @@ function CameraRig() {
         camera.fov = framing.fov;
         camera.near = 0.1;
         camera.far = 200;
-        camera.lookAt(0, topY + 0.02, playCenterZ);
+        camera.lookAt(0, topY + 0.02, lookZ);
         camera.updateProjectionMatrix();
 
         if (controlsRef.current) {
-            controlsRef.current.target.set(0, topY + 0.02, playCenterZ);
+            controlsRef.current.target.set(0, topY + 0.02, lookZ);
             controlsRef.current.update();
         }
     });
 
-    const playCenterZ = framing.isPortrait
-        ? tableLayout.dealerZ * 0.42 + tableLayout.playerZ * 0.58
-        : (tableLayout.playerZ + tableLayout.dealerZ) / 2;
+    if (!framing.enableOrbit) {
+        return null;
+    }
+
+    const lookZ = (tableLayout.playerZ + tableLayout.dealerZ) / 2;
 
     return (
         <OrbitControls
             ref={controlsRef}
-            enabled={framing.enableOrbit}
             enablePan={false}
             minPolarAngle={Math.PI / 4.2}
             maxPolarAngle={Math.PI / 2.35}
             minDistance={framing.minDistance}
             maxDistance={framing.maxDistance}
-            target={[0, tableLayout.topY + 0.02, playCenterZ]}
+            target={[0, tableLayout.topY + 0.02, lookZ]}
         />
     );
 }
@@ -105,26 +124,31 @@ function SceneContents({
 
     return (
         <>
-            <PerspectiveCamera makeDefault position={[0, 4.5, 7]} fov={42} />
+            <PerspectiveCamera makeDefault position={[0, 4, 1.5]} fov={50} up={[0, 0, -1]} />
             <CameraRig />
             <FirstFrameReady onReady={onSceneReady} />
 
-            <ambientLight intensity={0.42} />
+            <ambientLight intensity={0.72} />
             <hemisphereLight
-                intensity={0.32}
-                color="#fff2dd"
-                groundColor="#0a0a0a"
+                intensity={0.58}
+                color="#fff6e8"
+                groundColor="#1a1410"
             />
             <directionalLight
-                intensity={1.05}
-                position={[4, 10, 4]}
+                intensity={1.45}
+                position={[3, 9, 5]}
             />
-            <pointLight intensity={0.45} position={[-4, 5, 3]} color="#ffd9a0" />
+            <directionalLight
+                intensity={0.55}
+                position={[-3, 6, 2]}
+                color="#ffe4c2"
+            />
+            <pointLight intensity={0.85} position={[0, 6, 2]} color="#ffefd6" />
 
             <CasinoTable />
 
             <Suspense fallback={null}>
-                {isDeckShuffled && cardsRemaining > 0 && (
+                {isDeckShuffled && cardsRemaining > 0 && !framing.isMobile && (
                     <DeckStack3D
                         position={tableLayout.deckPosition}
                         backSrc={facedown}

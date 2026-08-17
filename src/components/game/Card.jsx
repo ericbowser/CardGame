@@ -97,7 +97,7 @@ function Card() {
                 </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-hidden bg-[#060606]">
+            <div className="min-h-[52dvh] flex-1 overflow-hidden bg-[#060606] lg:min-h-0">
                 <TableCanvas />
             </div>
 
