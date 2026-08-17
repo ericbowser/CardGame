@@ -27,7 +27,8 @@ function CameraRig() {
         }
 
         const { topY, playerZ, dealerZ } = tableLayout;
-        const shouldLock = !framing.enableOrbit;
+        const framingNow = getViewportFraming(size.width, size.height);
+        const shouldLock = !framingNow.enableOrbit;
         const key = `${shouldLock ? 'lock' : 'orbit'}:${topY.toFixed(3)}:${playerZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
 
         if (!shouldLock && layoutKey.current === key) {
@@ -41,7 +42,7 @@ function CameraRig() {
                 size.width,
                 size.height,
                 tableLayout,
-                framing.splitOffset,
+                framingNow.splitOffset,
             );
             // Straight-down lookAt with default up=(0,1,0) is degenerate — table becomes a tiny oval.
             camera.up.set(0, 0, -1);
@@ -58,10 +59,10 @@ function CameraRig() {
         const lookZ = (playerZ + dealerZ) / 2;
         camera.position.set(
             0,
-            topY + framing.distance * framing.heightMul,
-            playerZ + framing.distance * framing.zMul,
+            topY + framingNow.distance * framingNow.heightMul,
+            playerZ + framingNow.distance * framingNow.zMul,
         );
-        camera.fov = framing.fov;
+        camera.fov = framingNow.fov;
         camera.near = 0.1;
         camera.far = 200;
         camera.lookAt(0, topY + 0.02, lookZ);

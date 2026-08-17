@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 
+/** Galaxy S20-class phones are ~9:20. Any tall canvas must use the overhead crop. */
 export function isPhoneViewport(canvasWidth = 0, canvasHeight = 0) {
+    if (canvasWidth > 0 && canvasHeight > 0) {
+        if (canvasHeight >= canvasWidth * 0.92) {
+            return true;
+        }
+        if (canvasWidth < 900) {
+            return true;
+        }
+    }
+
     if (typeof window !== 'undefined') {
         if (window.matchMedia('(max-width: 900px)').matches) {
             return true;
@@ -10,23 +20,25 @@ export function isPhoneViewport(canvasWidth = 0, canvasHeight = 0) {
         }
     }
 
-    return canvasWidth > 0 && canvasWidth < 900;
+    return false;
 }
 
-/** Fit an overhead camera so the dealer-to-player play area fills the canvas. */
+/**
+ * Overhead camera using object-fit:cover.
+ * Tall phones (S20 9:20) used to fit WIDTH, which left a black band under the table.
+ */
 export function getOverheadCameraPose(canvasWidth, canvasHeight, layout, splitOffset) {
     const aspect = Math.max(canvasWidth, 1) / Math.max(canvasHeight, 1);
-    const fov = aspect < 0.85 ? 50 : 42;
+    const fov = aspect < 0.7 ? 54 : aspect < 0.9 ? 48 : 42;
     const vFov = (fov * Math.PI) / 180;
-    const playWidth = Math.max(4.8, splitOffset * 2 + 2.2);
-    const playDepth = Math.abs(layout.playerZ - layout.dealerZ) + 2.2;
+    const playWidth = Math.max(5.0, splitOffset * 2 + 2.4);
+    const playDepth = Math.abs(layout.playerZ - layout.dealerZ) + 2.8;
     const distForDepth = playDepth / 2 / Math.tan(vFov / 2);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
     const distForWidth = playWidth / 2 / Math.tan(hFov / 2);
-    // < 1 zooms in (crops rail). Portrait is usually width-limited.
-    const pad = aspect < 1 ? 0.78 : 0.88;
-    const dist = Math.max(distForDepth, distForWidth) * pad;
-    const lookZ = (layout.playerZ + layout.dealerZ) / 2;
+    // Cover the canvas (crop rails) instead of containing the playfield (black bars).
+    const dist = Math.min(distForDepth, distForWidth) * 0.9;
+    const lookZ = layout.dealerZ * 0.4 + layout.playerZ * 0.6;
 
     return {
         fov,
