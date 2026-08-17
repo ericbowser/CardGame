@@ -76,20 +76,20 @@ function Card() {
             </div>
 
             {isDeckShuffled && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-2 pt-2 sm:px-4 sm:pt-3 lg:px-6 lg:pt-4">
-                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/55 px-3 py-1.5 text-center backdrop-blur-md sm:px-5 sm:py-3">
-                        <p className="text-sm font-semibold tracking-wide text-white sm:text-base lg:text-lg">
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-1 sm:px-4 sm:pt-3 lg:px-6 lg:pt-4">
+                    <div className="mx-auto flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-b-xl border-x border-b border-white/15 bg-black/70 px-2 py-1 text-center backdrop-blur-md sm:flex-col sm:rounded-xl sm:border sm:px-5 sm:py-3">
+                        <p className="text-[11px] font-semibold tracking-wide text-white sm:text-base lg:text-lg">
                             {getGameStatusMessage()}
                         </p>
                         <div
-                            className={`mt-1.5 flex flex-wrap justify-center gap-1.5 text-xs sm:mt-2 sm:gap-4 sm:text-sm lg:text-base ${
+                            className={`flex flex-wrap justify-center gap-1 text-[11px] sm:mt-2 sm:gap-4 sm:text-sm lg:text-base ${
                                 showCards ? 'visible' : 'invisible'
                             }`}
                         >
-                            <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-amber-100 sm:px-3 sm:py-1">
+                            <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-bold text-amber-100 sm:rounded-lg sm:px-3 sm:py-1">
                                 Dealer: {dealerDisplay}
                             </span>
-                            <span className="rounded-lg bg-white/10 px-2 py-0.5 font-bold text-emerald-100 sm:px-3 sm:py-1">
+                            <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-bold text-emerald-100 sm:rounded-lg sm:px-3 sm:py-1">
                                 Player: {playerCountDisplay || '—'}
                             </span>
                         </div>
@@ -97,12 +97,14 @@ function Card() {
                 </div>
             )}
 
-            <div className="min-h-[52dvh] flex-1 overflow-hidden bg-[#060606] lg:min-h-0">
-                <TableCanvas />
+            <div className="relative min-h-0 flex-1 overflow-hidden bg-[#060606]">
+                <div className="absolute inset-0">
+                    <TableCanvas />
+                </div>
             </div>
 
             {!isDeckShuffled && (
-                <div className="pointer-events-auto shrink-0 border-t border-white/10 bg-black/85 px-4 py-4 text-center backdrop-blur-md">
+                <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-black/80 px-4 py-3 text-center backdrop-blur-md sm:static sm:py-4">
                     <p className="mb-1 text-lg font-bold text-white">Welcome to the table</p>
                     <p className="mb-3 text-sm text-white/70">
                         Choose 1 or 6 decks in Game Controls, then shuffle to start
@@ -120,8 +122,10 @@ function Card() {
 
             {isDeckShuffled && (
                 <div
-                    className={`pointer-events-auto shrink-0 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
-                        showActionBar ? 'visible' : 'invisible min-h-[3.75rem] sm:min-h-[4.5rem]'
+                    className={`pointer-events-auto z-20 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
+                        showActionBar
+                            ? 'absolute inset-x-0 bottom-0 sm:static'
+                            : 'invisible hidden min-h-[3.75rem] sm:block sm:min-h-[4.5rem]'
                     }`}
                 >
                     {canPlayerAct && (

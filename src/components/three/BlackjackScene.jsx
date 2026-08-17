@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
     ContactShadows,
     OrbitControls,
+    OrthographicCamera,
     PerspectiveCamera,
     useTexture,
 } from '@react-three/drei';
@@ -11,9 +12,60 @@ import { CardHand3D } from './CardHand3D';
 import { CasinoTable } from './CasinoTable';
 import { tableLayout } from './tableLayout';
 import { DeckStack3D } from './DeckStack3D';
-import { getOverheadCameraPose, getViewportFraming, useIsNarrowViewport } from './viewportFraming';
+import { getViewportFraming, useIsNarrowViewport } from './viewportFraming';
 
 useTexture.preload(facedown);
+
+function MobileOverheadCamera() {
+    const { size } = useThree();
+    const cameraRef = useRef(null);
+
+    useFrame(() => {
+        const camera = cameraRef.current;
+        if (!camera) {
+            return;
+        }
+
+        const { topY, playerZ, dealerZ, radius } = tableLayout;
+        const aspect = size.width / Math.max(size.height, 1);
+        const extraTop = 1.15;
+        const lookZ = (dealerZ + playerZ) / 2 + extraTop / 2;
+        const playWidth = Math.min(radius * 1.05, 6.4);
+        const playDepth = Math.abs(playerZ - dealerZ) + 2.8 + extraTop;
+
+        // Cover: fill the canvas, crop overflow (stops the S20 black band).
+        let worldHeight = playDepth;
+        let worldWidth = worldHeight * aspect;
+        if (worldWidth > playWidth) {
+            worldWidth = playWidth;
+            worldHeight = worldWidth / Math.max(aspect, 0.01);
+        }
+
+        camera.up.set(0, 0, -1);
+        camera.position.set(0, topY + 6, lookZ);
+        camera.lookAt(0, topY, lookZ);
+        camera.near = 0.1;
+        camera.far = 40;
+        camera.left = -worldWidth / 2;
+        camera.right = worldWidth / 2;
+        camera.top = worldHeight / 2;
+        camera.bottom = -worldHeight / 2;
+        camera.zoom = 1;
+        camera.updateProjectionMatrix();
+    });
+
+    return (
+        <OrthographicCamera
+            ref={cameraRef}
+            makeDefault
+            manual
+            near={0.1}
+            far={40}
+            position={[0, 6, 1.5]}
+            up={[0, 0, -1]}
+        />
+    );
+}
 
 function CameraRig() {
     const { camera, size } = useThree();
@@ -27,42 +79,22 @@ function CameraRig() {
         }
 
         const { topY, playerZ, dealerZ } = tableLayout;
-        const framingNow = getViewportFraming(size.width, size.height);
-        const shouldLock = !framingNow.enableOrbit;
-        const key = `${shouldLock ? 'lock' : 'orbit'}:${topY.toFixed(3)}:${playerZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
+        const key = `${topY.toFixed(3)}:${playerZ.toFixed(3)}:${size.width.toFixed(0)}x${size.height.toFixed(0)}`;
 
-        if (!shouldLock && layoutKey.current === key) {
+        if (layoutKey.current === key) {
             return;
         }
 
         layoutKey.current = key;
 
-        if (shouldLock) {
-            const pose = getOverheadCameraPose(
-                size.width,
-                size.height,
-                tableLayout,
-                framingNow.splitOffset,
-            );
-            // Straight-down lookAt with default up=(0,1,0) is degenerate — table becomes a tiny oval.
-            camera.up.set(0, 0, -1);
-            camera.position.set(...pose.position);
-            camera.fov = pose.fov;
-            camera.near = 0.08;
-            camera.far = 80;
-            camera.lookAt(...pose.target);
-            camera.updateProjectionMatrix();
-            return;
-        }
-
         camera.up.set(0, 1, 0);
         const lookZ = (playerZ + dealerZ) / 2;
         camera.position.set(
             0,
-            topY + framingNow.distance * framingNow.heightMul,
-            playerZ + framingNow.distance * framingNow.zMul,
+            topY + framing.distance * framing.heightMul,
+            playerZ + framing.distance * framing.zMul,
         );
-        camera.fov = framingNow.fov;
+        camera.fov = framing.fov;
         camera.near = 0.1;
         camera.far = 200;
         camera.lookAt(0, topY + 0.02, lookZ);
@@ -125,8 +157,14 @@ function SceneContents({
 
     return (
         <>
-            <PerspectiveCamera makeDefault position={[0, 4, 1.5]} fov={50} up={[0, 0, -1]} />
-            <CameraRig />
+            {framing.isMobile ? (
+                <MobileOverheadCamera />
+            ) : (
+                <>
+                    <PerspectiveCamera makeDefault position={[0, 4.5, 7]} fov={42} />
+                    <CameraRig />
+                </>
+            )}
             <FirstFrameReady onReady={onSceneReady} />
 
             <ambientLight intensity={0.72} />

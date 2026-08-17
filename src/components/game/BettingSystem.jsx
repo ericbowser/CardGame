@@ -64,6 +64,15 @@ function BettingSystem() {
 
     return (
         <div className="flex w-full flex-col gap-3">
+            <button
+                type="button"
+                onClick={handlePlaceBet}
+                className="w-full rounded-xl bg-emerald-600 py-3 text-lg font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canBet || betAmount <= 0 || betAmount > playerChips}
+            >
+                Place Bet & Deal
+            </button>
+
             <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-6">
             <h2 className="mb-3 text-center text-lg font-bold text-white sm:mb-4 sm:text-xl">Place Your Bet</h2>
 
@@ -156,15 +165,6 @@ function BettingSystem() {
                     Max
                 </button>
             </div>
-
-            <button
-                type="button"
-                onClick={handlePlaceBet}
-                className="w-full rounded-xl bg-emerald-600 py-3 text-lg font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!canBet || betAmount <= 0 || betAmount > playerChips}
-            >
-                Place Bet & Deal
-            </button>
 
             <p className="mt-4 text-center text-xs text-white/50">
                 Blackjack pays 3:2 · Regular wins pay 1:1
