@@ -11,10 +11,14 @@ export const CARD_LIFT = 0.014;
 const AnimatedMesh = animated('mesh');
 
 function configureCardTexture(texture) {
-    texture.anisotropy = 8;
+    texture.anisotropy = 16;
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
 }
 
 function PlayingCardMesh({
@@ -54,10 +58,9 @@ function PlayingCardMesh({
     return (
         <AnimatedMesh position={position} rotation={rotation}>
             <planeGeometry args={[CARD_WIDTH, CARD_HEIGHT]} />
-            <meshStandardMaterial
+            <meshBasicMaterial
                 map={faceMap}
-                roughness={0.38}
-                metalness={0.04}
+                toneMapped={false}
                 side={THREE.FrontSide}
             />
         </AnimatedMesh>

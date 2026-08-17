@@ -251,9 +251,9 @@ function BlackjackScene({
 
     return (
         <Canvas
-            dpr={isMobile ? [1, 1.15] : [1, 1.5]}
+            dpr={isMobile ? [1, 2] : [1, 2]}
             gl={{
-                antialias: !isMobile,
+                antialias: true,
                 powerPreference: 'high-performance',
                 stencil: false,
             }}
