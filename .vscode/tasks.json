@@ -2,6 +2,42 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "E2E: Counter ($1075, headed)",
+			"type": "npm",
+			"script": "e2e:counter:headed",
+			"problemMatcher": []
+		},
+		{
+			"label": "E2E: Counter ($2000, headed)",
+			"type": "npm",
+			"script": "e2e:counter:2000:headed",
+			"problemMatcher": []
+		},
+		{
+			"label": "E2E: AI watch (headed)",
+			"type": "npm",
+			"script": "e2e:ai:headed",
+			"problemMatcher": []
+		},
+		{
+			"label": "E2E: Counter video (headed)",
+			"type": "npm",
+			"script": "e2e:counter:video",
+			"problemMatcher": []
+		},
+		{
+			"label": "E2E: Counter until $1075 (headed)",
+			"type": "npm",
+			"script": "e2e:counter:until-goal:headed",
+			"problemMatcher": []
+		},
+		{
+			"label": "E2E: Counter until $2000 (headed)",
+			"type": "npm",
+			"script": "e2e:counter:2000:until-goal:headed",
+			"problemMatcher": []
+		},
+		{
 			"type": "docker-build",
 			"label": "docker-build",
 			"platform": "node",

@@ -7,7 +7,7 @@ import {
 } from '../../utils/countingUtils';
 import { countStatCellClass, countValueClass, evValueClass } from '../../utils/countDisplayStyles';
 
-function EvEstimatePanel({ wagerAmount }) {
+function EvEstimatePanel({ wagerAmount, compact = false }) {
     const { isDeckShuffled, trueCount, runningCount } = useGameContext();
 
     const evPercent = estimatePlayerEvPercent(trueCount);
@@ -15,8 +15,8 @@ function EvEstimatePanel({ wagerAmount }) {
     const evTone = evValueClass(evPercent);
 
     return (
-        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:p-5">
-            <h2 className="mb-3 text-lg font-bold text-white">Estimated EV</h2>
+        <div className={`w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md ${compact ? 'p-3' : 'rounded-2xl p-4 sm:p-5'}`}>
+            <h2 className={`font-bold text-white ${compact ? 'mb-2 text-sm' : 'mb-3 text-lg'}`}>Estimated EV</h2>
 
             {!isDeckShuffled ? (
                 <p className="text-sm text-white/55">

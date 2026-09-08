@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
 
-/** Galaxy S20-class phones are ~9:20. Any tall canvas must use the overhead crop. */
+function windowIsNarrow() {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    return window.innerWidth < 1024;
+}
+
+/** True only for phone/tablet windows — not when side panels shrink the table canvas. */
 export function isPhoneViewport(canvasWidth = 0, canvasHeight = 0) {
-    if (canvasWidth > 0 && canvasHeight > 0) {
-        if (canvasHeight >= canvasWidth * 0.92) {
-            return true;
-        }
-        if (canvasWidth < 900) {
-            return true;
-        }
+    if (windowIsNarrow()) {
+        return true;
     }
 
-    if (typeof window !== 'undefined') {
-        if (window.matchMedia('(max-width: 900px)').matches) {
-            return true;
-        }
-        if (Math.min(window.innerWidth, window.innerHeight) < 900) {
+    if (canvasWidth > 0 && canvasHeight > 0) {
+        const tallCanvas = canvasHeight >= canvasWidth * 1.05;
+        if (tallCanvas && windowIsNarrow()) {
             return true;
         }
     }
@@ -36,7 +36,6 @@ export function getOverheadCameraPose(canvasWidth, canvasHeight, layout, splitOf
     const distForDepth = playDepth / 2 / Math.tan(vFov / 2);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
     const distForWidth = playWidth / 2 / Math.tan(hFov / 2);
-    // Cover the canvas (crop rails) instead of containing the playfield (black bars).
     const dist = Math.min(distForDepth, distForWidth) * 0.9;
     const lookZ = layout.dealerZ * 0.4 + layout.playerZ * 0.6;
 
@@ -64,33 +63,48 @@ export function getViewportFraming(width, height) {
         };
     }
 
-    const distance = aspect > 1.8 ? 9 : aspect > 1.2 ? 10 : 11;
+    // Narrow center column on desktop (legacy 3-panel) — use overhead fit
+    const isCompactDesktop = width < 780 && !windowIsNarrow();
+
+    if (isCompactDesktop) {
+        return {
+            isMobile: false,
+            isPortrait: aspect < 1,
+            enableOrbit: false,
+            distance: aspect < 0.75 ? 8 : 9.5,
+            heightMul: 0.9,
+            zMul: 0.55,
+            fov: aspect < 0.7 ? 40 : 36,
+            minDistance: 6,
+            maxDistance: 14,
+            splitOffset: 1.15,
+            useOverheadDesktop: true,
+        };
+    }
+
+    const distance = aspect > 1.8 ? 12 : aspect > 1.2 ? 13.5 : 14.5;
 
     return {
         isMobile: false,
         isPortrait: false,
         enableOrbit: true,
         distance,
-        heightMul: 0.92,
-        zMul: 0.62,
-        fov: aspect > 1.5 ? 36 : 34,
-        minDistance: 7.5,
-        maxDistance: 20,
+        heightMul: 0.95,
+        zMul: 0.68,
+        fov: aspect > 1.5 ? 42 : 40,
+        minDistance: 9,
+        maxDistance: 24,
         splitOffset,
+        useOverheadDesktop: false,
     };
 }
 
 export function useIsNarrowViewport() {
-    const [narrow, setNarrow] = useState(() => {
-        if (typeof window === 'undefined') {
-            return false;
-        }
-        return isPhoneViewport(window.innerWidth, window.innerHeight);
-    });
+    const [narrow, setNarrow] = useState(() => windowIsNarrow());
 
     useEffect(() => {
         const onChange = () => {
-            setNarrow(isPhoneViewport(window.innerWidth, window.innerHeight));
+            setNarrow(windowIsNarrow());
         };
         onChange();
         window.addEventListener('resize', onChange);

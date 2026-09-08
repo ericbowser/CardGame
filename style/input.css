@@ -2,13 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+    body {
+        overflow: auto;
+    }
+
+    html,
+    body,
+    #root {
+        height: auto;
+        min-height: 100%;
+    }
+}
+
+@layer components {
+    .game-shell {
+        display: flex;
+        min-height: 0;
+        flex: 1 1 0%;
+        flex-direction: column;
+        gap: 0.25rem;
+        overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+        .game-shell {
+            flex-direction: row;
+        }
+    }
+
+    .game-table-column {
+        display: flex;
+        min-height: 0;
+        min-width: 0;
+        flex: 1 1 0%;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .game-rail {
+        display: flex;
+        width: 100%;
+        max-height: 100%;
+        flex-shrink: 0;
+        flex-direction: column;
+        gap: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    @media (min-width: 768px) {
+        .game-rail {
+            width: var(--sidebar-width, 20rem);
+            min-width: var(--sidebar-width, 20rem);
+            max-width: var(--sidebar-width, 20rem);
+        }
+    }
+}
+
 .position-new-card {
     position: absolute;
     left: 507px;
     top: 403px;
 }
 
-@player components {
+@layer components {
     .card {
         position: absolute;
         left: 507px;

@@ -1,7 +1,7 @@
-import { Suspense } from 'react';
+import { getCypressCardDealStaggerMs, isAutomationHost, isCypressWatchPace } from '../../e2e/e2ePacing';
+import { Suspense, useLayoutEffect } from 'react';
 import { useTexture } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
-import { useLayoutEffect } from 'react';
 import * as THREE from 'three';
 
 export const CARD_WIDTH = 0.88;
@@ -9,9 +9,15 @@ export const CARD_HEIGHT = 1.23;
 export const CARD_LIFT = 0.014;
 
 const AnimatedMesh = animated('mesh');
+const configuredTextures = new WeakSet();
 
 function configureCardTexture(texture) {
-    texture.anisotropy = 16;
+    if (configuredTextures.has(texture)) {
+        return;
+    }
+
+    configuredTextures.add(texture);
+    texture.anisotropy = isAutomationHost() ? 1 : 16;
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -19,6 +25,26 @@ function configureCardTexture(texture) {
     texture.minFilter = THREE.LinearFilter;
     texture.generateMipmaps = false;
     texture.needsUpdate = true;
+}
+
+function StaticCardMesh({
+    faceMap,
+    targetPosition,
+    targetRotationZ = 0,
+}) {
+    return (
+        <mesh
+            position={targetPosition}
+            rotation={[-Math.PI / 2, 0, targetRotationZ]}
+        >
+            <planeGeometry args={[CARD_WIDTH, CARD_HEIGHT]} />
+            <meshBasicMaterial
+                map={faceMap}
+                toneMapped={false}
+                side={THREE.FrontSide}
+            />
+        </mesh>
+    );
 }
 
 function PlayingCardMesh({
@@ -39,6 +65,37 @@ function PlayingCardMesh({
 
     const faceMap = faceDown ? backMap : frontMap;
 
+    if (isAutomationHost()) {
+        return (
+            <StaticCardMesh
+                faceMap={faceMap}
+                targetPosition={targetPosition}
+                targetRotationZ={targetRotationZ}
+            />
+        );
+    }
+
+    return (
+        <AnimatedCardMesh
+            faceMap={faceMap}
+            targetPosition={targetPosition}
+            targetRotationZ={targetRotationZ}
+            dealIndex={dealIndex}
+            deckOrigin={deckOrigin}
+        />
+    );
+}
+
+function AnimatedCardMesh({
+    faceMap,
+    targetPosition,
+    targetRotationZ,
+    dealIndex,
+    deckOrigin,
+}) {
+    const watchPace = isCypressWatchPace();
+    const dealStaggerMs = getCypressCardDealStaggerMs(110);
+
     const [{ position, rotation }] = useSpring(
         () => ({
             from: {
@@ -49,10 +106,13 @@ function PlayingCardMesh({
                 position: targetPosition,
                 rotation: [-Math.PI / 2, 0, targetRotationZ],
             },
-            delay: dealIndex * 110,
-            config: { tension: 180, friction: 22 },
+            delay: dealIndex * dealStaggerMs,
+            config: watchPace
+                ? { tension: 120, friction: 26 }
+                : { tension: 180, friction: 22 },
+            reset: true,
         }),
-        []
+        [targetPosition, targetRotationZ, dealIndex, deckOrigin, dealStaggerMs, watchPace],
     );
 
     return (

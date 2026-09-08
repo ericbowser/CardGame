@@ -1,15 +1,15 @@
 import GameBoard from '../components/game/GameBoard';
+import CounterTextBoard from '../components/game/CounterTextBoard';
+import { isCounterTextMode } from '../utils/counterTextMode';
 
 const App = () => {
-    return (
-        <div className="flex min-h-screen flex-col bg-[#040404] lg:h-screen lg:overflow-hidden">
-            <main className="flex w-full flex-1 flex-col overflow-y-auto px-2 py-2 lg:min-h-0 lg:overflow-hidden">
-                <GameBoard />
-            </main>
+    const textMode = isCounterTextMode();
 
-            <footer className="hidden shrink-0 py-2 text-center text-xs text-white/40 sm:block">
-                © {new Date().getFullYear()} Blackjack — React & Three.js
-            </footer>
+    return (
+        <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#040404]">
+            <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1">
+                {textMode ? <CounterTextBoard /> : <GameBoard />}
+            </main>
         </div>
     );
 };

@@ -12,8 +12,8 @@ function scheduleIdle(callback) {
     setTimeout(callback, 16);
 }
 
-/** Warm drei's texture cache in idle chunks so decode does not freeze the table. */
-export function preloadGameTextures(cardUrls = []) {
+/** Warm drei's texture cache so decode does not freeze the table. */
+export function preloadGameTextures(cardUrls = [], { eager = false } = {}) {
     if (!cardUrls.length) {
         return;
     }
@@ -27,6 +27,12 @@ export function preloadGameTextures(cardUrls = []) {
     preloadQueued = true;
 
     const urls = [facedown, ...cardUrls];
+
+    if (eager) {
+        useTexture.preload(urls);
+        return;
+    }
+
     const chunkSize = 6;
     let index = 0;
 

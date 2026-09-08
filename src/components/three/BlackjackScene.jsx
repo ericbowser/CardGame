@@ -1,5 +1,6 @@
-import { Suspense, memo, useRef } from 'react';
+import { Suspense, memo, useCallback, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { debugLog } from '../../e2e/debugLog';
 import {
     ContactShadows,
     OrbitControls,
@@ -15,6 +16,8 @@ import { DeckStack3D } from './DeckStack3D';
 import { getViewportFraming, useIsNarrowViewport } from './viewportFraming';
 
 useTexture.preload(facedown);
+
+import { isAutomationHost } from '../../e2e/e2ePacing';
 
 function MobileOverheadCamera() {
     const { size } = useThree();
@@ -33,7 +36,6 @@ function MobileOverheadCamera() {
         const playWidth = Math.min(radius * 1.05, 6.4);
         const playDepth = Math.abs(playerZ - dealerZ) + 2.8 + extraTop;
 
-        // Cover: fill the canvas, crop overflow (stops the S20 black band).
         let worldHeight = playDepth;
         let worldWidth = worldHeight * aspect;
         if (worldWidth > playWidth) {
@@ -144,6 +146,7 @@ function SceneContents({
     playerHands,
     dealerCards,
     showHoleCard,
+    dealEpoch,
     cardsRemaining,
     totalCardsInShoe,
     isDeckShuffled,
@@ -157,7 +160,7 @@ function SceneContents({
 
     return (
         <>
-            {framing.isMobile ? (
+            {framing.isMobile || framing.useOverheadDesktop ? (
                 <MobileOverheadCamera />
             ) : (
                 <>
@@ -206,32 +209,34 @@ function SceneContents({
                         zPosition={tableLayout.dealerZ}
                         showHoleCard={showHoleCard}
                         holeCardIndex={1}
-                        dealOffset={0}
+                        dealOffset={dealEpoch * 20}
                     />
                     {playerHands.map((hand, index) => (
                         <CardHand3D
                             key={hand.id}
-                            handId={`player-${index}`}
+                            handId={hand.id}
                             cards={hand.cards}
                             backSrc={facedown}
                             zPosition={tableLayout.playerZ}
                             xOffset={playerHands.length > 1 ? splitOffsets[index] ?? 0 : 0}
                             showHoleCard
                             holeCardIndex={-1}
-                            dealOffset={dealerCards.length + index * 2}
+                            dealOffset={dealEpoch * 20 + dealerCards.length + index * 2}
                         />
                     ))}
                 </>
             )}
 
-            <ContactShadows
-                frames={1}
-                position={[0, 0.005, tableLayout.playerZ * 0.4]}
-                opacity={0.38}
-                scale={tableLayout.radius * 2.2}
-                blur={1.8}
-                far={10}
-            />
+            {!isAutomationHost() && (
+                <ContactShadows
+                    frames={1}
+                    position={[0, 0.005, tableLayout.playerZ * 0.4]}
+                    opacity={0.38}
+                    scale={tableLayout.radius * 2.2}
+                    blur={1.8}
+                    far={10}
+                />
+            )}
         </>
     );
 }
@@ -242,21 +247,57 @@ function BlackjackScene({
     playerHands,
     dealerCards,
     showHoleCard,
+    dealEpoch = 0,
     cardsRemaining,
     totalCardsInShoe,
     isDeckShuffled,
     onSceneReady,
 }) {
     const isMobile = useIsNarrowViewport();
+    const [canvasKey, setCanvasKey] = useState(0);
+
+    const automation = isAutomationHost();
+
+    const handleCanvasCreated = useCallback(({ gl, invalidate }) => {
+        const canvas = gl.domElement;
+
+        canvas.addEventListener(
+            'webglcontextlost',
+            (event) => {
+                event.preventDefault();
+                // #region agent log
+                debugLog('BlackjackScene:webgl', 'context lost', { automation }, 'H-B');
+                // #endregion
+                if (!automation) {
+                    setCanvasKey((key) => key + 1);
+                }
+            },
+            false,
+        );
+
+        canvas.addEventListener(
+            'webglcontextrestored',
+            () => {
+                gl.resetState?.();
+                invalidate();
+            },
+            false,
+        );
+    }, [automation]);
 
     return (
         <Canvas
-            dpr={isMobile ? [1, 2] : [1, 2]}
+            key={canvasKey}
+            dpr={automation ? 1 : isMobile ? [1, 2] : [1, 2]}
+            frameloop="always"
             gl={{
-                antialias: true,
-                powerPreference: 'high-performance',
+                antialias: !automation,
+                powerPreference: automation ? 'default' : 'high-performance',
                 stencil: false,
+                preserveDrawingBuffer: automation,
+                failIfMajorPerformanceCaveat: false,
             }}
+            onCreated={handleCanvasCreated}
             style={{ width: '100%', height: '100%', touchAction: isMobile ? 'pan-y' : 'none' }}
         >
             <Suspense fallback={null}>
@@ -264,6 +305,7 @@ function BlackjackScene({
                     playerHands={playerHands}
                     dealerCards={dealerCards}
                     showHoleCard={showHoleCard}
+                    dealEpoch={dealEpoch}
                     cardsRemaining={cardsRemaining}
                     totalCardsInShoe={totalCardsInShoe}
                     isDeckShuffled={isDeckShuffled}

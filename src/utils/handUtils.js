@@ -47,6 +47,13 @@ export function getHandValue(hand) {
     return calculateHandValue(hand?.cards ?? []);
 }
 
+export function getTotalHandWager(hands) {
+    if (!hands?.length) {
+        return 0;
+    }
+    return hands.reduce((sum, hand) => sum + (hand?.bet ?? 0), 0);
+}
+
 export function isAcePair(hand) {
     return hand?.cards?.length === 2 && getCardRank(hand.cards[0]) === 'ace';
 }

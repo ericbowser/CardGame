@@ -28,12 +28,18 @@ import {
 import { buildShoe, shuffleArray } from '../utils/deckUtils';
 import { preloadGameTextures } from '../utils/texturePreload';
 import { yieldToMain, yieldToPaint } from '../utils/yieldToMain';
+import { attachE2eBridge } from '../e2e/e2eBridge';
+import { attachDebugLog, debugLog } from '../e2e/debugLog';
+import { getCypressDealerStepMs, isAutomationHost } from '../e2e/e2ePacing';
+import { getCounterWager } from '../utils/counterBetSpread';
+import { useAiPlayer } from '../hooks/useAiPlayer';
 import { TableVisualContext } from './tableVisualContext';
 import {
     canSplitHand,
     createPlayerHand,
     formatHandTotals,
     getHandValue,
+    getTotalHandWager,
     isAcePair,
 } from '../utils/handUtils';
 
@@ -56,6 +62,7 @@ export const GameProvider = ({ children }) => {
     const [isDeckShuffled, setIsDeckShuffled] = useState(false);
     const [boardBusy, setBoardBusy] = useState(false);
     const [boardBusyMessage, setBoardBusyMessage] = useState('');
+    const [dealEpoch, setDealEpoch] = useState(0);
     const [deckCount, setDeckCountState] = useState(DEFAULT_DECK_COUNT);
     const [totalCardsInShoe, setTotalCardsInShoe] = useState(getShoeSize(DEFAULT_DECK_COUNT));
 
@@ -88,6 +95,12 @@ export const GameProvider = ({ children }) => {
     const [cardsSeen, setCardsSeen] = useState(0);
     const [countEvents, setCountEvents] = useState([]);
 
+    const [aiPlayerEnabled, setAiPlayerEnabled] = useState(false);
+    const [aiWatchMode, setAiWatchMode] = useState(true);
+    const [aiPlayerStatus, setAiPlayerStatus] = useState('off');
+    const [aiPlayerLastAction, setAiPlayerLastAction] = useState('');
+    const aiSessionStartChipsRef = useRef(null);
+
     const roundBetRef = useRef(0);
     const deckRef = useRef([]);
     const shuffledDeckRef = useRef([]);
@@ -102,6 +115,8 @@ export const GameProvider = ({ children }) => {
     const dealerCardsRef = useRef([]);
     const activeHandIndexRef = useRef(0);
     const boardBusyRef = useRef(false);
+    const e2eStateRef = useRef({});
+    const startingChipsRef = useRef(DEFAULT_STARTING_CHIPS);
 
     const updateShuffledDeck = (cards) => {
         shuffledDeckRef.current = cards;
@@ -143,8 +158,33 @@ export const GameProvider = ({ children }) => {
     useEffect(() => {
         if (gameState === GameState.GameConcluded) {
             setRoundOver(true);
+            // #region agent log
+            debugLog('GameContext:round', 'game concluded', {
+                playerChips,
+                dealEpoch,
+                handResultsCount: handResults.length,
+                jsHeapMb: typeof performance !== 'undefined' && performance.memory
+                    ? Math.round(performance.memory.usedJSHeapSize / 1048576)
+                    : null,
+            }, 'H-C');
+            // #endregion
         }
-    }, [gameState]);
+    }, [gameState, playerChips, dealEpoch, handResults.length]);
+
+    useEffect(() => {
+        if (!boardBusy) {
+            return undefined;
+        }
+        const timer = window.setTimeout(() => {
+            // #region agent log
+            debugLog('GameContext:watchdog', 'boardBusy stuck >8s', {
+                boardBusyMessage,
+                gameState,
+            }, 'H-A');
+            // #endregion
+        }, 8000);
+        return () => window.clearTimeout(timer);
+    }, [boardBusy, boardBusyMessage, gameState]);
 
     useEffect(() => {
         if (alertMessage) {
@@ -209,21 +249,36 @@ export const GameProvider = ({ children }) => {
 
     const runWithBoardBusy = async (message, work) => {
         const alreadyBusy = boardBusyRef.current;
+        const busyStarted = Date.now();
+        const automation = isAutomationHost();
         if (!alreadyBusy) {
             boardBusyRef.current = true;
             setBoardBusy(true);
             setBoardBusyMessage(message);
-            await yieldToMain();
+            // #region agent log
+            debugLog('GameContext:runWithBoardBusy', 'busy start', { message }, 'H-A');
+            // #endregion
+            if (!automation) {
+                await yieldToMain();
+            }
         }
 
         try {
             await work();
-            await yieldToPaint();
+            if (!automation) {
+                await yieldToPaint();
+            }
         } finally {
             if (!alreadyBusy) {
                 boardBusyRef.current = false;
                 setBoardBusy(false);
                 setBoardBusyMessage('');
+                // #region agent log
+                debugLog('GameContext:runWithBoardBusy', 'busy end', {
+                    message,
+                    durationMs: Date.now() - busyStarted,
+                }, 'H-A');
+                // #endregion
             }
         }
     };
@@ -261,7 +316,10 @@ export const GameProvider = ({ children }) => {
             if (imageDefaults.length === FULL_DECK_SIZE) {
                 deckRef.current = imageDefaults;
                 setDeck(imageDefaults);
-                preloadGameTextures(imageDefaults);
+                const eagerTextures =
+                    import.meta.env.VITE_E2E === 'true' ||
+                    (typeof window !== 'undefined' && window.Cypress);
+                preloadGameTextures(imageDefaults, { eager: eagerTextures });
                 imagesLoadedRef.current = true;
                 addLog('Cards loaded successfully.');
             } else {
@@ -436,6 +494,7 @@ export const GameProvider = ({ children }) => {
 
     const dealInitialCards = () => {
         addLog('Dealing cards...');
+        setDealEpoch((epoch) => epoch + 1);
 
         const pCards = [takeCard(), takeCard()];
         const dCards = [takeCard(), takeCard()];
@@ -443,6 +502,7 @@ export const GameProvider = ({ children }) => {
 
         const hands = [createPlayerHand(pCards, initialBet)];
         syncPlayerHands(hands);
+        syncRoundBetTotal(hands);
         activeHandIndexRef.current = 0;
         setActiveHandIndex(0);
 
@@ -567,13 +627,14 @@ export const GameProvider = ({ children }) => {
 
             const splitBet = hand.bet;
             setPlayerChips((prev) => prev - splitBet);
-            setCurrentBet((prev) => prev + splitBet);
-            roundBetRef.current += splitBet;
 
             const [cardA, cardB] = hand.cards;
             const handA = createPlayerHand([cardA], splitBet);
             const handB = createPlayerHand([cardB], splitBet, { awaitingSplitDeal: true });
             hands.splice(handIndex, 1, handA, handB);
+
+            const totalWager = syncRoundBetTotal(hands);
+            addLog(`Split — total wager $${totalWager} ($${splitBet} per hand).`);
 
             if (isAcePair(handA) && TABLE_RULES.splitAcesOneCard) {
                 handA.cards.push(takeCard());
@@ -660,6 +721,8 @@ export const GameProvider = ({ children }) => {
         let currentDealerCards = [...startingCards];
         let currentDealerCount = calculateHandValue(currentDealerCards);
 
+        const dealerStepMs = getCypressDealerStepMs(1000);
+
         const play = () => {
             if (currentDealerCount < TABLE_RULES.dealerStandsOn) {
                 addLog(`Dealer has ${currentDealerCount} and hits.`);
@@ -673,7 +736,7 @@ export const GameProvider = ({ children }) => {
                 syncShoeCount();
                 recordCount(newCard, 'Dealer hit');
                 flushCounts();
-                setTimeout(play, 1000);
+                setTimeout(play, dealerStepMs);
             } else {
                 addLog(`Dealer stands with ${currentDealerCount}.`);
                 setDealerCount(currentDealerCount);
@@ -690,7 +753,7 @@ export const GameProvider = ({ children }) => {
             }
         };
 
-        setTimeout(play, 1000);
+        setTimeout(play, dealerStepMs);
     };
 
     useEffect(() => {
@@ -713,15 +776,20 @@ export const GameProvider = ({ children }) => {
         return true;
     };
 
-    const resetRoundState = () => {
+    const syncRoundBetTotal = (hands) => {
+        const total = getTotalHandWager(hands);
+        roundBetRef.current = total;
+        setCurrentBet(total);
+        return total;
+    };
+
+    /** Reset round flags without clearing the table — cards swap atomically in dealInitialCards. */
+    const resetRoundMeta = () => {
         setWinner(null);
         setRoundOver(false);
         setAlertMessage(null);
-        syncPlayerHands([]);
         activeHandIndexRef.current = 0;
         setActiveHandIndex(0);
-        setDealerCards([]);
-        dealerCardsRef.current = [];
         setDealerCount(0);
         setShowHoleCard(false);
         setPlayerBust(false);
@@ -786,7 +854,7 @@ export const GameProvider = ({ children }) => {
                 addLog('--- Starting New Round ---');
             }
 
-            resetRoundState();
+            resetRoundMeta();
             reshuffleIfLow();
             dealInitialCards();
         });
@@ -804,6 +872,76 @@ export const GameProvider = ({ children }) => {
         }
         handleDeal(betToUse);
     };
+
+    useEffect(() => {
+        if (aiPlayerEnabled && aiSessionStartChipsRef.current === null) {
+            aiSessionStartChipsRef.current = playerChips;
+        }
+        if (!aiPlayerEnabled) {
+            aiSessionStartChipsRef.current = null;
+        }
+    }, [aiPlayerEnabled, playerChips]);
+
+    const isRoundActive =
+        gameState === GameState.PlayerPhase ||
+        gameState === GameState.DealerPhase ||
+        gameState === GameState.CardsDealt;
+
+    useEffect(() => {
+        if (!isDeckShuffled || aiPlayerEnabled || boardBusy || isRoundActive) {
+            return;
+        }
+
+        const spreadBet = getCounterWager(
+            trueCount,
+            playerChips,
+            cardsRemaining,
+            runningCount,
+        );
+        if (spreadBet > 0 && spreadBet <= playerChips) {
+            setBetAmount(spreadBet);
+        }
+    }, [
+        isDeckShuffled,
+        aiPlayerEnabled,
+        boardBusy,
+        isRoundActive,
+        gameState,
+        trueCount,
+        playerChips,
+        runningCount,
+        cardsRemaining,
+    ]);
+
+    useAiPlayer({
+        enabled: aiPlayerEnabled,
+        watchMode: aiWatchMode,
+        actionDelayMs:
+            typeof window !== 'undefined' && window.Cypress?.env?.('ACTION_PAUSE_MS') != null
+                ? Number(window.Cypress.env('ACTION_PAUSE_MS'))
+                : undefined,
+        gameState,
+        boardBusy,
+        roundOver,
+        isDeckShuffled,
+        playerChips,
+        trueCount,
+        runningCount,
+        cardsRemaining,
+        playerHands,
+        activeHandIndex,
+        dealerCards,
+        canSplit,
+        setBetAmount,
+        placeBetAndDeal,
+        shuffleDeck,
+        playerHit,
+        playerStay,
+        playerSplit,
+        setAiPlayerStatus,
+        setAiPlayerLastAction,
+        addLog,
+    });
 
     const resetGame = () => {
         addLog('--- Game Reset ---');
@@ -827,6 +965,7 @@ export const GameProvider = ({ children }) => {
         setDealerCount(0);
         setShowHoleCard(false);
         setPlayerChips(DEFAULT_STARTING_CHIPS);
+        startingChipsRef.current = DEFAULT_STARTING_CHIPS;
         setCurrentBet(0);
         setLastBetAmount(DEFAULT_BET);
         setBetAmount(DEFAULT_BET);
@@ -837,9 +976,46 @@ export const GameProvider = ({ children }) => {
         setDeckBlackjacks(0);
         setHandResults([]);
         resetCounting();
+        setAiPlayerLastAction('');
+        setAiPlayerStatus(aiPlayerEnabled ? 'ready' : 'off');
         imagesLoadedRef.current = false;
         imagesLoadingRef.current = false;
         getImages();
+    };
+
+    useEffect(() => {
+        const enableBridge =
+            import.meta.env.VITE_E2E === 'true' ||
+            (typeof window !== 'undefined' && window.Cypress);
+
+        if (!enableBridge) {
+            return undefined;
+        }
+
+        attachDebugLog();
+        return attachE2eBridge(e2eStateRef);
+    }, []);
+
+    e2eStateRef.current = {
+        gameState,
+        boardBusy,
+        playerChips,
+        betAmount,
+        runningCount,
+        trueCount,
+        cardsRemaining,
+        playerHands,
+        activeHandIndex,
+        dealerCards,
+        canSplit,
+        roundOver,
+        isDeckShuffled,
+        startingChips: startingChipsRef.current,
+        shuffleDeck,
+        setBetAmount,
+        isDeckReady: () => imagesLoadedRef.current && deckRef.current.length >= FULL_DECK_SIZE,
+        dealEpoch,
+        showHoleCard,
     };
 
     const value = {
@@ -899,6 +1075,13 @@ export const GameProvider = ({ children }) => {
         boardBusy,
         boardBusyMessage,
         tableRules: TABLE_RULES,
+        aiPlayerEnabled,
+        setAiPlayerEnabled,
+        aiWatchMode,
+        setAiWatchMode,
+        aiSessionStartChips: aiSessionStartChipsRef.current,
+        aiPlayerStatus,
+        aiPlayerLastAction,
     };
 
     const tableVisual = useMemo(
@@ -906,21 +1089,25 @@ export const GameProvider = ({ children }) => {
             playerHands,
             dealerCards,
             showHoleCard,
+            dealEpoch,
             cardsRemaining: cardsRemaining > 0 ? Math.max(8, Math.ceil(cardsRemaining / 8) * 8) : 0,
             totalCardsInShoe,
             isDeckShuffled,
             boardBusy,
             boardBusyMessage,
+            aiPlayerEnabled,
         }),
         [
             playerHands,
             dealerCards,
             showHoleCard,
+            dealEpoch,
             cardsRemaining,
             totalCardsInShoe,
             isDeckShuffled,
             boardBusy,
             boardBusyMessage,
+            aiPlayerEnabled,
         ],
     );
 

@@ -8,4 +8,8 @@ dist
 
 coverage
 
-style/output.css
+# Cypress (dev/e2e only — not needed for production)
+cypress/
+cypress.config.js
+
+.cursor/debug*.log

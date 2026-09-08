@@ -82,9 +82,26 @@ export function formatCountDelta(delta) {
     return '0';
 }
 
+export function estimateDecksRemaining(cardsRemaining, deckSize = 52) {
+    const exact = cardsRemaining / deckSize;
+    // Round down to nearest half-deck — conservative for the player (raises TC)
+    return Math.max(Math.floor(exact * 2) / 2, 0.5);
+}
+
 export function calculateTrueCount(runningCount, cardsRemaining, deckSize = 52) {
-    const decksRemaining = Math.max(cardsRemaining / deckSize, 0.25);
+    const decksRemaining = estimateDecksRemaining(cardsRemaining, deckSize);
     return Math.round((runningCount / decksRemaining) * 10) / 10;
+}
+
+/** Integer-style TC used for bet-ramp thresholds (Schlesinger / TableSharp). */
+export function getBettingTrueCount(runningCount, cardsRemaining, deckSize = 52) {
+    const decksRemaining = estimateDecksRemaining(cardsRemaining, deckSize);
+    return runningCount / decksRemaining;
+}
+
+/** Floor TC for spread lookup — counters size bets on conservative TC. */
+export function getSpreadTrueCount(runningCount, cardsRemaining, deckSize = 52) {
+    return Math.floor(getBettingTrueCount(runningCount, cardsRemaining, deckSize));
 }
 
 /**
