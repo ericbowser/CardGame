@@ -8,8 +8,9 @@ dist
 
 coverage
 
-# Cypress (dev/e2e only — not needed for production)
-cypress/
-cypress.config.js
+# Cypress artifacts (keep specs + config tracked)
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
 
 .cursor/debug*.log
