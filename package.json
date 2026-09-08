@@ -81,7 +81,7 @@
     "postcss": "^8.4.38",
     "start-server-and-test": "^3.0.12",
     "vite": "^6.4.1",
-    "vite-plugin-node-polyfills": "^0.23.0"
+    "vite-plugin-node-polyfills": "^0.2.0"
   },
   "author": "E.R.B.",
   "license": "MIT"

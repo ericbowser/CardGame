@@ -209,7 +209,7 @@ function SceneContents({
                         zPosition={tableLayout.dealerZ}
                         showHoleCard={showHoleCard}
                         holeCardIndex={1}
-                        dealOffset={dealEpoch * 20}
+                        dealOffset={0}
                     />
                     {playerHands.map((hand, index) => (
                         <CardHand3D
@@ -221,7 +221,7 @@ function SceneContents({
                             xOffset={playerHands.length > 1 ? splitOffsets[index] ?? 0 : 0}
                             showHoleCard
                             holeCardIndex={-1}
-                            dealOffset={dealEpoch * 20 + dealerCards.length + index * 2}
+                            dealOffset={dealerCards.length + index * 2}
                         />
                     ))}
                 </>

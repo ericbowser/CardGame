@@ -41,5 +41,23 @@ export function createActionSemaphore() {
 
 /** Card fly-in + React commit settle after a board action. */
 export function getAiSettleMs(watchMode) {
-    return watchMode ? 900 : 450;
+    return watchMode ? 2800 : 550;
+}
+
+/** Pause before betting / hitting — human “thinking” time. */
+export function getAiActionDelayMs(watchMode, override) {
+    if (override != null && Number.isFinite(override)) {
+        return override;
+    }
+    return watchMode ? 3500 : 750;
+}
+
+/** Hold on the finished table before the next wager. */
+export function getAiBetweenHandsMs(watchMode) {
+    return watchMode ? 4500 : 600;
+}
+
+/** Extra time after cards are dealt so fly-ins are fully visible. */
+export function getAiDealWatchMs(watchMode) {
+    return watchMode ? 3200 : 700;
 }

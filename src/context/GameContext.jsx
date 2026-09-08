@@ -30,7 +30,7 @@ import { preloadGameTextures } from '../utils/texturePreload';
 import { yieldToMain, yieldToPaint } from '../utils/yieldToMain';
 import { attachE2eBridge } from '../e2e/e2eBridge';
 import { attachDebugLog, debugLog } from '../e2e/debugLog';
-import { getCypressDealerStepMs, isAutomationHost } from '../e2e/e2ePacing';
+import { getDealerStepMs, isAutomationHost } from '../e2e/e2ePacing';
 import { getCounterWager } from '../utils/counterBetSpread';
 import { useAiPlayer } from '../hooks/useAiPlayer';
 import { TableVisualContext } from './tableVisualContext';
@@ -721,7 +721,7 @@ export const GameProvider = ({ children }) => {
         let currentDealerCards = [...startingCards];
         let currentDealerCount = calculateHandValue(currentDealerCards);
 
-        const dealerStepMs = getCypressDealerStepMs(1000);
+        const dealerStepMs = getDealerStepMs(1000);
 
         const play = () => {
             if (currentDealerCount < TABLE_RULES.dealerStandsOn) {
@@ -932,6 +932,7 @@ export const GameProvider = ({ children }) => {
         activeHandIndex,
         dealerCards,
         canSplit,
+        dealEpoch,
         setBetAmount,
         placeBetAndDeal,
         shuffleDeck,

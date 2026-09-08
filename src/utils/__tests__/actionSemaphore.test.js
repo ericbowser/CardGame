@@ -32,4 +32,10 @@ describe('actionSemaphore', () => {
     test('settle ms is longer in watch mode', () => {
         expect(getAiSettleMs(true)).toBeGreaterThan(getAiSettleMs(false));
     });
+
+    test('action delay and between-hands pause are longer in watch mode', () => {
+        const { getAiActionDelayMs, getAiBetweenHandsMs } = require('../actionSemaphore');
+        expect(getAiActionDelayMs(true)).toBeGreaterThan(getAiActionDelayMs(false));
+        expect(getAiBetweenHandsMs(true)).toBeGreaterThan(getAiBetweenHandsMs(false));
+    });
 });

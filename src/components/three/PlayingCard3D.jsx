@@ -1,4 +1,5 @@
 import { getCypressCardDealStaggerMs, isAutomationHost, isCypressWatchPace } from '../../e2e/e2ePacing';
+import { isAiWatchPace } from '../../e2e/aiWatchPacing';
 import { Suspense, useLayoutEffect } from 'react';
 import { useTexture } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
@@ -93,8 +94,8 @@ function AnimatedCardMesh({
     dealIndex,
     deckOrigin,
 }) {
-    const watchPace = isCypressWatchPace();
-    const dealStaggerMs = getCypressCardDealStaggerMs(110);
+    const watchPace = isCypressWatchPace() || isAiWatchPace();
+    const dealStaggerMs = getCypressCardDealStaggerMs(watchPace ? 280 : 110);
 
     const [{ position, rotation }] = useSpring(
         () => ({
@@ -108,7 +109,7 @@ function AnimatedCardMesh({
             },
             delay: dealIndex * dealStaggerMs,
             config: watchPace
-                ? { tension: 120, friction: 26 }
+                ? { tension: 90, friction: 28 }
                 : { tension: 180, friction: 22 },
             reset: true,
         }),

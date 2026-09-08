@@ -43,6 +43,20 @@ export function getCypressDealerStepMs(fallback = 1000) {
     return fallback;
 }
 
+/** Dealer hit pacing — slower when the AI watch player is active. */
+export function getDealerStepMs(fallback = 1000) {
+    const cypress = getCypressEnvNumber('DEALER_STEP_MS');
+    if (cypress != null) {
+        return cypress;
+    }
+
+    if (typeof window !== 'undefined' && window.__AI_WATCH_PACE__) {
+        return Math.max(fallback, 2200);
+    }
+
+    return getCypressDealerStepMs(fallback);
+}
+
 export function getCypressCardDealStaggerMs(fallback = 110) {
     const explicit = getCypressEnvNumber('CARD_DEAL_STAGGER_MS');
     if (explicit != null) {
