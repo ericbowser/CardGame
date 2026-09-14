@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { GameState } from '../../constants/game';
 import { AI_PLAYER_ID } from '../../constants/aiPlayer';
 import { useGameContext } from '../../context';
@@ -10,6 +11,23 @@ const CHIP_STYLES = {
     100: 'bg-purple-800 hover:bg-purple-700',
 };
 
+const CHIP_VALUES = [5, 10, 25, 50, 100];
+
+/** Digits only — no decimals, signs, or exponents. */
+function parseWholeBet(raw) {
+    if (raw === '') {
+        return { ok: true, value: 0, draft: '' };
+    }
+    if (!/^\d+$/.test(raw)) {
+        return { ok: false };
+    }
+    const value = Number.parseInt(raw, 10);
+    if (!Number.isFinite(value) || value < 0) {
+        return { ok: false };
+    }
+    return { ok: true, value, draft: String(value) };
+}
+
 function BettingSystem({ compact = false, rail = false }) {
     const {
         playerChips,
@@ -20,11 +38,14 @@ function BettingSystem({ compact = false, rail = false }) {
         betAmount,
         setBetAmount,
         boardBusy,
-        playerHands,
         aiPlayerEnabled,
     } = useGameContext();
 
-    const chipValues = [5, 10, 25, 50, 100];
+    const [betDraft, setBetDraft] = useState(String(betAmount ?? 0));
+
+    useEffect(() => {
+        setBetDraft(String(betAmount ?? 0));
+    }, [betAmount]);
 
     const isRoundActive =
         gameState === GameState.PlayerPhase ||
@@ -33,7 +54,7 @@ function BettingSystem({ compact = false, rail = false }) {
 
     const canBet = isDeckShuffled && !isRoundActive && !boardBusy && !aiPlayerEnabled;
 
-    const clampBet = (value) => Math.min(Math.max(0, value), playerChips);
+    const clampBet = (value) => Math.min(Math.max(0, Math.trunc(value)), playerChips);
 
     const handlePlaceBet = () => {
         if (betAmount <= 0 || betAmount > playerChips) {
@@ -42,28 +63,126 @@ function BettingSystem({ compact = false, rail = false }) {
         placeBetAndDeal(betAmount);
     };
 
-    const handleBetChange = (e) => {
-        const { value, valueAsNumber } = e.target;
+    /** Chip buttons replace the bet entirely (not cumulative). */
+    const handleChipClick = (value) => {
+        const next = clampBet(value);
+        setBetAmount(next);
+        setBetDraft(String(next));
+    };
 
-        if (value === '') {
+    const handleBetInputChange = (event) => {
+        const { value } = event.target;
+        const parsed = parseWholeBet(value);
+        if (!parsed.ok) {
+            return;
+        }
+
+        if (parsed.draft === '') {
+            setBetDraft('');
             setBetAmount(0);
             return;
         }
 
-        if (Number.isNaN(valueAsNumber)) {
-            return;
+        const next = clampBet(parsed.value);
+        setBetDraft(parsed.draft);
+        setBetAmount(next);
+    };
+
+    const handleBetInputBlur = () => {
+        const next = clampBet(betAmount);
+        setBetAmount(next);
+        setBetDraft(String(next));
+    };
+
+    const clearBet = () => {
+        setBetAmount(0);
+        setBetDraft('0');
+    };
+
+    const maxBet = () => {
+        const next = clampBet(playerChips);
+        setBetAmount(next);
+        setBetDraft(String(next));
+    };
+
+    const chipGridClass = compact
+        ? 'grid grid-cols-5 gap-0.5'
+        : rail
+          ? 'grid grid-cols-5 gap-2'
+          : 'mb-4 flex flex-wrap justify-center gap-2 sm:gap-3';
+
+    const chipButtonClass = (value) => {
+        const selected = canBet && betAmount === value;
+        const base = CHIP_STYLES[value] ?? 'bg-white/20 hover:bg-white/30';
+        if (compact) {
+            return `rounded py-1 text-[9px] font-bold text-white disabled:opacity-40 ${base} ${selected ? 'ring-2 ring-amber-300' : ''}`;
         }
-
-        setBetAmount(clampBet(Math.floor(valueAsNumber)));
+        if (rail) {
+            return `rounded-lg py-2.5 text-sm font-bold text-white disabled:opacity-40 ${base} ${selected ? 'ring-2 ring-amber-300' : ''}`;
+        }
+        return `h-11 w-11 rounded-full text-xs font-bold text-white shadow-lg transition hover:scale-110 disabled:opacity-40 sm:h-14 sm:w-14 sm:text-sm ${base} ${selected ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`;
     };
 
-    const handleChipClick = (value) => {
-        setBetAmount(clampBet(value));
-    };
+    const inputClass = compact
+        ? `min-w-0 flex-1 border border-white/20 bg-neutral-900 px-0.5 py-1 text-center text-xs font-bold tabular-nums text-amber-100 ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`
+        : rail
+          ? `min-w-0 flex-1 rounded-lg border border-white/20 bg-neutral-900 px-2 py-2.5 text-center text-lg font-bold tabular-nums text-amber-100 ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`
+          : `min-w-0 flex-1 basis-[4.5rem] rounded-lg border border-white/30 bg-neutral-900 p-3 text-center text-xl font-bold tabular-nums text-amber-100 ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`;
 
-    const adjustBet = (delta) => {
-        setBetAmount(clampBet(betAmount + delta));
-    };
+    const chipsBlock = (
+        <div className={chipGridClass}>
+            {CHIP_VALUES.map((value) => (
+                <button
+                    key={`chip-${value}`}
+                    type="button"
+                    data-testid={`chip-${value}`}
+                    className={chipButtonClass(value)}
+                    onClick={() => handleChipClick(value)}
+                    disabled={!canBet || value > playerChips}
+                    aria-pressed={betAmount === value}
+                    title={`Set bet to $${value}`}
+                >
+                    {compact ? value : `$${value}`}
+                </button>
+            ))}
+        </div>
+    );
+
+    const manualBetBlock = (
+        <div className={`flex gap-1 ${compact ? '' : rail ? '' : 'mb-4'}`}>
+            <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="off"
+                value={betDraft}
+                onChange={handleBetInputChange}
+                onBlur={handleBetInputBlur}
+                readOnly={!canBet}
+                aria-label="Bet amount (whole dollars)"
+                data-testid="bet-input"
+                placeholder="0"
+                className={inputClass}
+                style={{ WebkitTextFillColor: 'rgb(253 230 138)' }}
+            />
+            <button
+                type="button"
+                onClick={clearBet}
+                className={`bg-white/10 font-medium text-white transition hover:bg-white/20 disabled:opacity-40 ${compact ? 'rounded px-1.5 py-1 text-[8px]' : rail ? 'rounded-lg px-3 py-2.5 text-xs' : 'rounded-lg px-4 py-3 text-sm'}`}
+                disabled={!canBet}
+            >
+                Clear
+            </button>
+            <button
+                type="button"
+                onClick={maxBet}
+                className={`bg-amber-500 font-bold text-black transition hover:bg-amber-400 disabled:opacity-40 ${compact ? 'rounded px-1.5 py-1 text-[8px]' : rail ? 'rounded-lg px-3 py-2.5 text-xs' : 'rounded-lg px-4 py-3 text-sm'}`}
+                disabled={!canBet}
+            >
+                Max
+            </button>
+        </div>
+    );
 
     if (rail) {
         return (
@@ -92,53 +211,9 @@ function BettingSystem({ compact = false, rail = false }) {
                     <p className="text-center text-sm text-white/45">Shuffle the shoe to enable betting.</p>
                 )}
 
-                <div className="grid grid-cols-4 gap-2">
-                    {chipValues.map((value) => (
-                        <button
-                            key={`chip-${value}`}
-                            type="button"
-                            data-testid={`chip-${value}`}
-                            className={`rounded-lg py-2.5 text-sm font-bold text-white disabled:opacity-40 ${CHIP_STYLES[value]}`}
-                            onClick={() => handleChipClick(value)}
-                            disabled={!canBet || value > playerChips}
-                        >
-                            ${value}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex gap-1">
-                    <button
-                        type="button"
-                        onClick={() => adjustBet(-5)}
-                        className="rounded-l-lg bg-white/10 px-3 py-2.5 text-lg font-bold text-white disabled:opacity-40"
-                        disabled={!canBet || betAmount <= 0}
-                        aria-label="Decrease bet by 5"
-                    >
-                        −
-                    </button>
-                    <input
-                        type="number"
-                        value={betAmount}
-                        onChange={handleBetChange}
-                        min="0"
-                        max={playerChips}
-                        step="5"
-                        readOnly={!canBet}
-                        aria-label="Bet amount"
-                        data-testid="bet-input"
-                        className={`min-w-0 flex-1 border-y border-white/20 bg-neutral-900 px-2 py-2.5 text-center text-lg font-bold tabular-nums text-amber-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ WebkitTextFillColor: 'rgb(253 230 138)' }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setBetAmount(playerChips)}
-                        className="rounded-r-lg bg-amber-500 px-3 py-2.5 text-xs font-bold text-black disabled:opacity-40"
-                        disabled={!canBet}
-                    >
-                        Max
-                    </button>
-                </div>
+                <p className="text-[11px] text-white/40">Chips set the bet (replace, not add).</p>
+                {chipsBlock}
+                {manualBetBlock}
 
                 <button
                     type="button"
@@ -180,53 +255,8 @@ function BettingSystem({ compact = false, rail = false }) {
                     <p className="text-center text-[9px] text-white/45">Shuffle to bet</p>
                 )}
 
-                <div className="grid grid-cols-4 gap-0.5">
-                    {chipValues.map((value) => (
-                        <button
-                            key={`chip-${value}`}
-                            type="button"
-                            data-testid={`chip-${value}`}
-                            className={`rounded py-1 text-[9px] font-bold text-white disabled:opacity-40 ${CHIP_STYLES[value]}`}
-                            onClick={() => handleChipClick(value)}
-                            disabled={!canBet || value > playerChips}
-                        >
-                            {value}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex gap-0.5">
-                    <button
-                        type="button"
-                        onClick={() => adjustBet(-5)}
-                        className="rounded-l bg-white/10 px-1.5 py-1 text-xs font-bold text-white disabled:opacity-40"
-                        disabled={!canBet || betAmount <= 0}
-                        aria-label="Decrease bet by 5"
-                    >
-                        −
-                    </button>
-                    <input
-                        type="number"
-                        value={betAmount}
-                        onChange={handleBetChange}
-                        min="0"
-                        max={playerChips}
-                        step="5"
-                        readOnly={!canBet}
-                        aria-label="Bet amount"
-                        data-testid="bet-input"
-                        className={`min-w-0 flex-1 border-y border-white/20 bg-neutral-900 px-0.5 py-1 text-center text-xs font-bold tabular-nums text-amber-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ WebkitTextFillColor: 'rgb(253 230 138)' }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setBetAmount(playerChips)}
-                        className="rounded-r bg-amber-500 px-1.5 py-1 text-[8px] font-bold text-black disabled:opacity-40"
-                        disabled={!canBet}
-                    >
-                        Max
-                    </button>
-                </div>
+                {chipsBlock}
+                {manualBetBlock}
 
                 <button
                     type="button"
@@ -268,7 +298,10 @@ function BettingSystem({ compact = false, rail = false }) {
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-white/55">
                             Bet amount
                         </div>
-                        <div className="mt-1 text-3xl font-extrabold tabular-nums text-amber-300 sm:text-4xl" data-testid="bet-amount">
+                        <div
+                            className="mt-1 text-3xl font-extrabold tabular-nums text-amber-300 sm:text-4xl"
+                            data-testid="bet-amount"
+                        >
                             ${betAmount}
                         </div>
                     </div>
@@ -296,72 +329,12 @@ function BettingSystem({ compact = false, rail = false }) {
                     </p>
                 )}
 
-                <div className="mb-4 flex justify-center gap-2 sm:gap-3">
-                    {chipValues.map((value) => (
-                        <button
-                            key={`chip-${value}`}
-                            type="button"
-                            data-testid={`chip-${value}`}
-                            className={`h-11 w-11 rounded-full text-xs font-bold text-white shadow-lg transition hover:scale-110 disabled:opacity-40 sm:h-14 sm:w-14 sm:text-sm ${CHIP_STYLES[value]}`}
-                            onClick={() => handleChipClick(value)}
-                            disabled={!canBet || value > playerChips}
-                        >
-                            ${value}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="mb-4 flex flex-wrap gap-0 sm:flex-nowrap">
-                    <div className="flex shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => adjustBet(-5)}
-                            className="rounded-l-lg bg-white/10 px-3 py-3 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40"
-                            disabled={!canBet || betAmount <= 0}
-                            aria-label="Decrease bet by 5"
-                        >
-                            −
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => adjustBet(5)}
-                            className="rounded-r-lg border-l border-white/10 bg-white/10 px-3 py-3 text-lg font-bold text-white transition hover:bg-white/20 disabled:opacity-40"
-                            disabled={!canBet || betAmount >= playerChips}
-                            aria-label="Increase bet by 5"
-                        >
-                            +
-                        </button>
-                    </div>
-                    <input
-                        type="number"
-                        value={betAmount}
-                        onChange={handleBetChange}
-                        min="0"
-                        max={playerChips}
-                        step="5"
-                        readOnly={!canBet}
-                        aria-label="Bet amount"
-                        data-testid="bet-input"
-                        className={`min-w-0 flex-1 basis-[4.5rem] border-y border-l-0 border-white/30 bg-neutral-900 p-3 text-center text-xl font-bold tabular-nums text-amber-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${!canBet ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ WebkitTextFillColor: 'rgb(253 230 138)' }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setBetAmount(0)}
-                        className="border-l border-white/10 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/20 disabled:opacity-40"
-                        disabled={!canBet}
-                    >
-                        Clear
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setBetAmount(playerChips)}
-                        className="rounded-r-lg bg-amber-500 px-4 py-3 text-sm font-medium text-black transition hover:bg-amber-400 disabled:opacity-40"
-                        disabled={!canBet}
-                    >
-                        Max
-                    </button>
-                </div>
+                <p className="mb-2 text-center text-xs text-white/45">
+                    Tap a chip to set that bet — amounts replace, they do not stack.
+                </p>
+                {chipsBlock}
+                <p className="mb-2 text-center text-xs text-white/45">Or type a whole-dollar amount</p>
+                {manualBetBlock}
 
                 <p className="mt-4 text-center text-xs text-white/50">
                     Blackjack pays 3:2 · Regular wins pay 1:1
@@ -372,3 +345,4 @@ function BettingSystem({ compact = false, rail = false }) {
 }
 
 export default BettingSystem;
+export { parseWholeBet };

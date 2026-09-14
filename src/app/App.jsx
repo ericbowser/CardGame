@@ -7,7 +7,7 @@ const App = () => {
 
     return (
         <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#040404]">
-            <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1">
+            <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1 max-md:min-h-0">
                 {textMode ? <CounterTextBoard /> : <GameBoard />}
             </main>
         </div>
