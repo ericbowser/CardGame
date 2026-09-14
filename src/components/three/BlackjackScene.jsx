@@ -221,7 +221,8 @@ function SceneContents({
                             xOffset={playerHands.length > 1 ? splitOffsets[index] ?? 0 : 0}
                             showHoleCard
                             holeCardIndex={-1}
-                            dealOffset={dealerCards.length + index * 2}
+                            // Stable stagger — do not tie to live dealer length (hits would re-index).
+                            dealOffset={2 + index * 8}
                         />
                     ))}
                 </>

@@ -51,6 +51,27 @@ body {
         overflow: hidden;
     }
 
+    .game-ai-glance {
+        display: flex;
+        width: 100%;
+        max-height: 14rem;
+        flex-shrink: 0;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 0.25rem 0.15rem 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .game-ai-glance {
+            width: 15.5rem;
+            min-width: 15.5rem;
+            max-width: 15.5rem;
+            max-height: none;
+            height: 100%;
+            padding: 0 0.15rem;
+        }
+    }
+
     .game-rail {
         display: flex;
         width: 100%;

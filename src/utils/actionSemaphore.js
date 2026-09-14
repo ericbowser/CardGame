@@ -39,9 +39,14 @@ export function createActionSemaphore() {
     };
 }
 
+/**
+ * Watch-mode pacing: snappier than the first pass, still slow enough to read.
+ * Non-watch stays quick for unattended / Cypress automation.
+ */
+
 /** Card fly-in + React commit settle after a board action. */
 export function getAiSettleMs(watchMode) {
-    return watchMode ? 2800 : 550;
+    return watchMode ? 1600 : 450;
 }
 
 /** Pause before betting / hitting — human “thinking” time. */
@@ -49,15 +54,20 @@ export function getAiActionDelayMs(watchMode, override) {
     if (override != null && Number.isFinite(override)) {
         return override;
     }
-    return watchMode ? 3500 : 750;
+    return watchMode ? 2000 : 600;
 }
 
 /** Hold on the finished table before the next wager. */
 export function getAiBetweenHandsMs(watchMode) {
-    return watchMode ? 4500 : 600;
+    return watchMode ? 2600 : 500;
 }
 
 /** Extra time after cards are dealt so fly-ins are fully visible. */
 export function getAiDealWatchMs(watchMode) {
-    return watchMode ? 3200 : 700;
+    return watchMode ? 1800 : 550;
+}
+
+/** Hold after the dealer hole card flips face-up before rushing hits / settle. */
+export function getAiDealerRevealMs(watchMode) {
+    return watchMode ? 2000 : 550;
 }

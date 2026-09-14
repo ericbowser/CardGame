@@ -38,4 +38,10 @@ describe('actionSemaphore', () => {
         expect(getAiActionDelayMs(true)).toBeGreaterThan(getAiActionDelayMs(false));
         expect(getAiBetweenHandsMs(true)).toBeGreaterThan(getAiBetweenHandsMs(false));
     });
+
+    test('dealer reveal pause is longer in watch mode', () => {
+        const { getAiDealerRevealMs } = require('../actionSemaphore');
+        expect(getAiDealerRevealMs(true)).toBeGreaterThan(getAiDealerRevealMs(false));
+        expect(getAiDealerRevealMs(true)).toBeGreaterThanOrEqual(1800);
+    });
 });

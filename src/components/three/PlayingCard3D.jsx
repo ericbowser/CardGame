@@ -1,6 +1,6 @@
 import { getCypressCardDealStaggerMs, isAutomationHost, isCypressWatchPace } from '../../e2e/e2ePacing';
 import { isAiWatchPace } from '../../e2e/aiWatchPacing';
-import { Suspense, useLayoutEffect } from 'react';
+import { Suspense, useLayoutEffect, useRef } from 'react';
 import { useTexture } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
 import * as THREE from 'three';
@@ -94,26 +94,42 @@ function AnimatedCardMesh({
     dealIndex,
     deckOrigin,
 }) {
+    // Fly-from-deck only once per mounted card. Later layout shifts (hits, splits,
+    // parent re-renders) should ease in place — never replay the deal.
+    const hasDealtRef = useRef(false);
     const watchPace = isCypressWatchPace() || isAiWatchPace();
-    const dealStaggerMs = getCypressCardDealStaggerMs(watchPace ? 280 : 110);
+    const dealStaggerMs = getCypressCardDealStaggerMs(watchPace ? 170 : 110);
+
+    const tx = targetPosition[0];
+    const ty = targetPosition[1];
+    const tz = targetPosition[2];
+    const ox = deckOrigin[0];
+    const oy = deckOrigin[1];
+    const oz = deckOrigin[2];
 
     const [{ position, rotation }] = useSpring(
-        () => ({
-            from: {
-                position: deckOrigin,
-                rotation: [-Math.PI / 2, 0, 0.35],
-            },
-            to: {
-                position: targetPosition,
-                rotation: [-Math.PI / 2, 0, targetRotationZ],
-            },
-            delay: dealIndex * dealStaggerMs,
-            config: watchPace
-                ? { tension: 90, friction: 28 }
-                : { tension: 180, friction: 22 },
-            reset: true,
-        }),
-        [targetPosition, targetRotationZ, dealIndex, deckOrigin, dealStaggerMs, watchPace],
+        () => {
+            const firstDeal = !hasDealtRef.current;
+            hasDealtRef.current = true;
+
+            return {
+                from: firstDeal
+                    ? {
+                          position: [ox, oy, oz],
+                          rotation: [-Math.PI / 2, 0, 0.35],
+                      }
+                    : undefined,
+                to: {
+                    position: [tx, ty, tz],
+                    rotation: [-Math.PI / 2, 0, targetRotationZ],
+                },
+                delay: firstDeal ? dealIndex * dealStaggerMs : 0,
+                config: watchPace
+                    ? { tension: 130, friction: 24 }
+                    : { tension: 180, friction: 22 },
+            };
+        },
+        [tx, ty, tz, targetRotationZ, dealIndex, ox, oy, oz, dealStaggerMs, watchPace],
     );
 
     return (

@@ -380,7 +380,8 @@ export const GameProvider = ({ children }) => {
         setDeckWins((prev) => prev + 1);
         if (isBlackjack) {
             setDeckBlackjacks((prev) => prev + 1);
-            const winnings = Math.floor(bet * 1.5);
+            // Exact 3:2 (round so chip totals stay whole dollars).
+            const winnings = Math.round(bet * 1.5);
             setPlayerChips((prev) => prev + bet + winnings);
             addLog(`Hand won with Blackjack! +$${winnings} on $${bet}.`);
             return { outcome: 'blackjack', amount: winnings };
@@ -711,7 +712,7 @@ export const GameProvider = ({ children }) => {
         }
     };
 
-    const dealerTurn = () => {
+    const dealerTurn = (schedule, isCancelled) => {
         const startingCards = dealerCardsRef.current;
         setShowHoleCard(true);
         addLog("Dealer's turn.");
@@ -724,6 +725,10 @@ export const GameProvider = ({ children }) => {
         const dealerStepMs = getDealerStepMs(1000);
 
         const play = () => {
+            if (isCancelled()) {
+                return;
+            }
+
             if (currentDealerCount < TABLE_RULES.dealerStandsOn) {
                 addLog(`Dealer has ${currentDealerCount} and hits.`);
 
@@ -736,7 +741,7 @@ export const GameProvider = ({ children }) => {
                 syncShoeCount();
                 recordCount(newCard, 'Dealer hit');
                 flushCounts();
-                setTimeout(play, dealerStepMs);
+                schedule(play, dealerStepMs);
             } else {
                 addLog(`Dealer stands with ${currentDealerCount}.`);
                 setDealerCount(currentDealerCount);
@@ -753,13 +758,31 @@ export const GameProvider = ({ children }) => {
             }
         };
 
-        setTimeout(play, dealerStepMs);
+        schedule(play, dealerStepMs);
     };
 
     useEffect(() => {
-        if (gameState === GameState.DealerPhase && !roundOver) {
-            dealerTurn();
+        if (gameState !== GameState.DealerPhase || roundOver) {
+            return undefined;
         }
+
+        let cancelled = false;
+        const timers = [];
+        const schedule = (fn, ms) => {
+            const id = window.setTimeout(() => {
+                if (!cancelled) {
+                    fn();
+                }
+            }, ms);
+            timers.push(id);
+        };
+
+        dealerTurn(schedule, () => cancelled);
+
+        return () => {
+            cancelled = true;
+            timers.forEach((id) => window.clearTimeout(id));
+        };
     }, [gameState, roundOver]);
 
     const placeBet = (amount) => {
@@ -933,6 +956,7 @@ export const GameProvider = ({ children }) => {
         dealerCards,
         canSplit,
         dealEpoch,
+        showHoleCard,
         setBetAmount,
         placeBetAndDeal,
         shuffleDeck,

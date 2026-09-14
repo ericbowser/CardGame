@@ -16,10 +16,16 @@ function AiPlayerPanel({ compact = false, embedded = false }) {
         trueCount,
         playerChips,
         cardsRemaining,
+        runningCount,
         boardBusy,
     } = useGameContext();
 
-    const { evPercent, label } = describeAiBet(trueCount, playerChips, cardsRemaining);
+    const { evPercent, label } = describeAiBet(
+        trueCount,
+        playerChips,
+        cardsRemaining,
+        runningCount,
+    );
     const evTone = evValueClass(evPercent);
     const tcTone = countValueClass(trueCount);
 

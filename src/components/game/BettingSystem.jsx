@@ -4,6 +4,7 @@ import { useGameContext } from '../../context';
 
 const CHIP_STYLES = {
     5: 'bg-red-700 hover:bg-red-600',
+    10: 'bg-orange-700 hover:bg-orange-600',
     25: 'bg-green-700 hover:bg-green-600',
     50: 'bg-blue-700 hover:bg-blue-600',
     100: 'bg-purple-800 hover:bg-purple-700',
@@ -23,7 +24,7 @@ function BettingSystem({ compact = false, rail = false }) {
         aiPlayerEnabled,
     } = useGameContext();
 
-    const chipValues = [5, 25, 50, 100];
+    const chipValues = [5, 10, 25, 50, 100];
 
     const isRoundActive =
         gameState === GameState.PlayerPhase ||

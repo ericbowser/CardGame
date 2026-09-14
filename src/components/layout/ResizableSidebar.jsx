@@ -18,7 +18,7 @@ function readStoredWidth() {
     return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, stored));
 }
 
-function ResizableSidebar({ main, sidebar, className = '' }) {
+function ResizableSidebar({ main, glance = null, sidebar, className = '' }) {
     const [width, setWidth] = useState(readStoredWidth);
     const dragging = useRef(false);
     const startX = useRef(0);
@@ -77,6 +77,8 @@ function ResizableSidebar({ main, sidebar, className = '' }) {
             style={{ '--sidebar-width': `${width}px` }}
         >
             <div className="game-table-column">{main}</div>
+
+            {glance}
 
             <div
                 className="hidden shrink-0 touch-none md:block"

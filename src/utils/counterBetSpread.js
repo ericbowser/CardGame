@@ -7,7 +7,7 @@ import {
 import { getBasicStrategyAction } from './basicStrategy';
 
 /** Chip buttons available in the betting UI. */
-export const BET_DENOMINATIONS = [5, 25, 50, 100];
+export const BET_DENOMINATIONS = [5, 10, 25, 50, 100];
 
 /** PoC session goal (~7.5% climb from $1000). */
 export const COUNTER_GOAL_CHIPS = 1075;
@@ -16,45 +16,62 @@ export const COUNTER_GOAL_CHIPS = 1075;
 export const COUNTER_GOAL_DOUBLE = 2000;
 
 const MIN_UNIT = 5;
-const MAX_SPREAD_UNITS = 12;
+/** Max units when the shoe is strongly +EV (TC ≥ +6). */
+const MAX_SPREAD_UNITS = 40;
 
 /**
- * Classic 1-12 unit ramp (TableSharp / Don Schlesinger).
- * Flat at TC ≤ +1, then convex ramp once the shoe favors the player.
- *
- * @see https://tablesharp.com/blog/hi-lo-card-counting-tutorial
+ * Count-driven ramp: small bets in poor shoes, press hard when TC is hot.
+ * Units × $5 → $5 / $10 / $15 / $40 / $75 / $125 / $175 / $200
  */
 export function spreadUnitsForTrueCount(spreadTc) {
-    if (spreadTc <= 1) {
-        return 1;
+    if (spreadTc <= -1) {
+        return 1; // $5 — survive negative shoes
+    }
+    if (spreadTc === 0) {
+        return 2; // $10 — flat / house edge
+    }
+    if (spreadTc === 1) {
+        return 3; // $15 — near break-even
     }
     if (spreadTc === 2) {
-        return 2;
+        return 8; // $40
     }
     if (spreadTc === 3) {
-        return 4;
+        return 15; // $75
     }
     if (spreadTc === 4) {
-        return 8;
+        return 25; // $125
     }
-    return MAX_SPREAD_UNITS;
+    if (spreadTc === 5) {
+        return 35; // $175
+    }
+    return MAX_SPREAD_UNITS; // $200 at TC ≥ +6
 }
 
-/** Kelly-style bankroll cap by spread TC tier. */
+/** Bankroll risk caps by spread TC — room for max bets when the count is rich. */
 function riskFractionForSpreadTc(spreadTc) {
-    if (spreadTc <= 1) {
+    if (spreadTc <= -1) {
         return 0.01;
     }
-    if (spreadTc === 2) {
-        return 0.04;
+    if (spreadTc === 0) {
+        return 0.02;
     }
-    if (spreadTc === 3) {
+    if (spreadTc === 1) {
+        return 0.03;
+    }
+    if (spreadTc === 2) {
         return 0.06;
     }
-    if (spreadTc === 4) {
-        return 0.08;
+    if (spreadTc === 3) {
+        return 0.1;
     }
-    return 0.1;
+    if (spreadTc === 4) {
+        return 0.15;
+    }
+    if (spreadTc === 5) {
+        return 0.2;
+    }
+    return 0.25;
 }
 
 /**
@@ -91,8 +108,8 @@ function resolveSpreadTc(trueCount, runningCount, cardsRemaining, deckSize) {
 }
 
 /**
- * Bet spread driven by true count (S17, 3:2, DAS).
- * Uses the standard 1-12 unit ramp with bankroll Kelly caps.
+ * Bet spread driven by true count (S17, 3:2).
+ * Low bets in −EV shoes; press bankroll when TC is strongly positive.
  */
 export function getAiCounterWager(
     trueCount,
@@ -122,10 +139,14 @@ export function getAiCounterWager(
     );
     target = Math.min(target, riskCap, chipsAvailable);
 
+    // Always snap to chip units; round up only when pressing a +EV count.
     if (spreadTc >= 2) {
         target = roundToUnit(target, true);
+        if (target > riskCap) {
+            target = roundToUnit(riskCap, false);
+        }
     } else {
-        target = MIN_UNIT;
+        target = roundToUnit(Math.min(target, riskCap), false) || MIN_UNIT;
     }
 
     target = Math.min(Math.max(target, MIN_UNIT), riskCap, chipsAvailable);

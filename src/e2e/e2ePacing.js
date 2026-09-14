@@ -51,7 +51,7 @@ export function getDealerStepMs(fallback = 1000) {
     }
 
     if (typeof window !== 'undefined' && window.__AI_WATCH_PACE__) {
-        return Math.max(fallback, 2200);
+        return Math.max(fallback, 1700);
     }
 
     return getCypressDealerStepMs(fallback);

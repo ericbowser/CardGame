@@ -3,12 +3,13 @@ import { AI_PLAYER_ID } from '../constants/aiPlayer';
 import { GameState } from '../constants/game';
 import { TABLE_RULES } from '../constants/rules';
 import { setAiWatchPace } from '../e2e/aiWatchPacing';
-import { describeAiBet, resolveAiPlayAction } from '../utils/counterBetSpread';
+import { describeAiBet, resolveAiPlayAction, COUNTER_GOAL_DOUBLE } from '../utils/counterBetSpread';
 import { canSplitHand } from '../utils/handUtils';
 import {
     getAiActionDelayMs,
     getAiBetweenHandsMs,
     getAiDealWatchMs,
+    getAiDealerRevealMs,
     getAiSettleMs,
 } from '../utils/actionSemaphore';
 
@@ -67,6 +68,7 @@ export function useAiPlayer({
     activeHandIndex,
     dealerCards,
     canSplit,
+    showHoleCard = false,
     setBetAmount,
     placeBetAndDeal,
     shuffleDeck,
@@ -95,6 +97,7 @@ export function useAiPlayer({
         activeHandIndex,
         dealerCards,
         canSplit,
+        showHoleCard,
         runningCount,
         dealEpoch,
         setBetAmount,
@@ -143,11 +146,17 @@ export function useAiPlayer({
             await waitWhile(() => snapRef.current.boardBusy, BUSY_WAIT_MS);
         };
 
-        const waitForUiReady = async () => {
+        /** Gate: board idle + one paint + settle — never advance mid-animation. */
+        const gatePhase = async (extraMs = 0) => {
             await waitUntilIdle();
             await yieldToPaint(signal);
             await sleep(getAiSettleMs(snapRef.current.watchMode), signal);
+            if (extraMs > 0) {
+                await sleep(extraMs, signal);
+            }
         };
+
+        const waitForUiReady = async () => gatePhase(0);
 
         const handsAreDealt = () => {
             const s = snapRef.current;
@@ -156,7 +165,7 @@ export function useAiPlayer({
             return playerCards >= 2 && dealerCardsCount >= 2 && !s.boardBusy;
         };
 
-        /** Watch the finished hand (scores, hole card, result) before betting again. */
+        /** Gate: finished hand visible before the next wager. */
         const watchFinishedHand = async () => {
             const s = snapRef.current;
             if (s.gameState !== GameState.GameConcluded) {
@@ -169,11 +178,35 @@ export function useAiPlayer({
             lastWatchedEpoch = s.dealEpoch;
             s.setAiPlayerStatus('between-rounds');
             s.setAiPlayerLastAction(`${AI_PLAYER_ID} watching result…`);
-            await waitUntilIdle();
-            await yieldToPaint(signal);
-            await sleep(getAiBetweenHandsMs(s.watchMode), signal);
+            await gatePhase(getAiBetweenHandsMs(s.watchMode));
         };
 
+        /**
+         * Gate dealer turn in order:
+         * 1) hole card face-up → 2) reveal hold → 3) phase ends → 4) result hold
+         */
+        const watchDealerReveal = async () => {
+            const live = snapRef.current;
+            live.setAiPlayerStatus('watching');
+            live.setAiPlayerLastAction(`${AI_PLAYER_ID} watching dealer reveal…`);
+
+            await waitWhile(() => {
+                const s = snapRef.current;
+                return s.gameState === GameState.DealerPhase && !s.showHoleCard;
+            }, DEAL_WAIT_MS);
+
+            await waitUntilIdle();
+            await yieldToPaint(signal);
+            await sleep(getAiDealerRevealMs(snapRef.current.watchMode), signal);
+
+            await waitWhile(
+                () => snapRef.current.gameState === GameState.DealerPhase,
+                BUSY_WAIT_MS,
+            );
+            await watchFinishedHand();
+        };
+
+        /** Gate: new deal epoch + cards on table + fly-in settle. */
         const waitForDeal = async (epochBefore) => {
             await waitWhile(
                 () => snapRef.current.dealEpoch === epochBefore,
@@ -201,6 +234,18 @@ export function useAiPlayer({
                         continue;
                     }
 
+                    // Lock in a bankroll win — stop pressing once the double-bankroll goal is hit.
+                    if (snap.playerChips >= COUNTER_GOAL_DOUBLE) {
+                        snap.setAiPlayerStatus('ready');
+                        snap.setAiPlayerLastAction(
+                            `${AI_PLAYER_ID} → goal reached ($${COUNTER_GOAL_DOUBLE})`,
+                        );
+                        snap.addLog(
+                            `${AI_PLAYER_ID} reached $${COUNTER_GOAL_DOUBLE} — pausing.`,
+                        );
+                        break;
+                    }
+
                     await waitUntilIdle();
                     if (signal.aborted) {
                         break;
@@ -208,15 +253,9 @@ export function useAiPlayer({
 
                     const live = snapRef.current;
 
-                    // --- Dealer: wait through every hit, then hold on the result ---
+                    // --- Dealer: hold on hole-card flip, then every hit, then the result ---
                     if (live.gameState === GameState.DealerPhase) {
-                        live.setAiPlayerStatus('watching');
-                        await waitWhile(
-                            () => snapRef.current.gameState === GameState.DealerPhase,
-                            BUSY_WAIT_MS,
-                        );
-                        await waitForUiReady();
-                        await watchFinishedHand();
+                        await watchDealerReveal();
                         continue;
                     }
 

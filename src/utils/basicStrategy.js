@@ -45,18 +45,22 @@ function dealerIndex(upcard) {
 }
 
 /**
- * S17, 3:2, DAS, no surrender, no double-down (hit when chart says double).
+ * S17 multi-deck basic strategy. No double-down in this game — chart
+ * doubles map to hit (columns: 2 3 4 5 6 7 8 9 10 A).
  */
 const HARD = {
     8: 'HHHHHHHHHH',
-    9: 'HHHSSSHHHH',
+    // 9: double 3–6 → hit when doubles unavailable
+    9: 'HHHHHHHHHH',
     10: 'HHHHHHHHHH',
     11: 'HHHHHHHHHH',
-    12: 'HHSSSSHHHH',
-    13: 'HSSSSSHHHH',
-    14: 'HSSSSSHHHH',
-    15: 'HSSSSSHHHH',
-    16: 'HSSSSSHHHH',
+    // 12: stand only vs 4–6
+    12: 'HHSSSHHHHH',
+    // 13–16: stand vs 2–6, hit vs 7–A
+    13: 'SSSSSHHHHH',
+    14: 'SSSSSHHHHH',
+    15: 'SSSSSHHHHH',
+    16: 'SSSSSHHHHH',
     17: 'SSSSSSSSSS',
     18: 'SSSSSSSSSS',
     19: 'SSSSSSSSSS',
@@ -72,7 +76,8 @@ const SOFT = {
     5: 'HHHHHHHHHH',
     6: 'HHHHHHHHHH',
     7: 'HHHHHHHHHH',
-    8: 'SSSSSSHHHH',
+    // A,7: stand vs 2–8, hit vs 9–A (doubles vs 3–6 → stand)
+    8: 'SSSSSSSHHH',
     9: 'SSSSSSSSSS',
 };
 
@@ -81,14 +86,16 @@ const SOFT = {
  * Never split 5s or 10s (except Illustrious 18 tens splits at high TC).
  */
 const PAIRS = {
-    2: 'PPPPPPHPPH',
-    3: 'PPPPPPHPPH',
+    // 2s/3s: split vs 2–7 only
+    2: 'PPPPPPHHHH',
+    3: 'PPPPPPHHHH',
     4: 'HHHPPHHHHH',
     5: 'HHHHHHHHHH',
     6: 'PPPPPHHHHH',
     7: 'PPPPPPHHHH',
     8: 'PPPPPPPPPP',
-    9: 'PPPSPSPHHH',
+    // 9s: split 2–4/6/8–9; stand vs 5/7/10/A
+    9: 'PPPSPSPPSS',
     10: 'SSSSSSSSSS',
     A: 'PPPPPPPPPP',
 };
@@ -167,25 +174,25 @@ function applyCountDeviations(baseAction, { total, soft, upcard, trueCount }) {
         return 'hit';
     }
 
-    // --- Negative indices (deviate below threshold) ---
+    // --- Negative indices (Illustrious 18: deviate at or below index) ---
 
-    // 13 vs 2: hit below TC −1
+    // 13 vs 2: hit at TC ≤ −1
     if (!soft && total === 13 && upcard === 2 && tc <= -1) {
         return 'hit';
     }
-    // 12 vs 4: hit below TC 0
-    if (!soft && total === 12 && upcard === 4 && tc < 0) {
+    // 12 vs 4: hit at TC ≤ 0
+    if (!soft && total === 12 && upcard === 4 && tc <= 0) {
         return 'hit';
     }
-    // 12 vs 5: hit below TC −2
+    // 12 vs 5: hit at TC ≤ −2
     if (!soft && total === 12 && upcard === 5 && tc <= -2) {
         return 'hit';
     }
-    // 12 vs 6: hit below TC −1 (S17)
+    // 12 vs 6: hit at TC ≤ −1 (S17)
     if (!soft && total === 12 && upcard === 6 && tc <= -1) {
         return 'hit';
     }
-    // 13 vs 3: hit below TC −2
+    // 13 vs 3: hit at TC ≤ −2
     if (!soft && total === 13 && upcard === 3 && tc <= -2) {
         return 'hit';
     }

@@ -3,6 +3,7 @@ import Card from './Card';
 import BettingSystem from './BettingSystem';
 import VitalBettingStats from './VitalBettingStats';
 import AiPlayerPanel from './AiPlayerPanel';
+import AiGlancePanel from './AiGlancePanel';
 import ShoeSettingsPanel from './ShoeSettingsPanel';
 import DeckTrackerPanel from './DeckTrackerPanel';
 import GamePanel from '../layout/GamePanel';
@@ -66,7 +67,11 @@ const GameBoard = () => {
 
     return (
         <div className="flex h-full min-h-0 flex-1 flex-col">
-            <ResizableSidebar main={tableColumn} sidebar={settingsColumn} />
+            <ResizableSidebar
+                main={tableColumn}
+                glance={<AiGlancePanel />}
+                sidebar={settingsColumn}
+            />
         </div>
     );
 };

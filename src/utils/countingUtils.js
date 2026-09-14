@@ -84,8 +84,8 @@ export function formatCountDelta(delta) {
 
 export function estimateDecksRemaining(cardsRemaining, deckSize = 52) {
     const exact = cardsRemaining / deckSize;
-    // Round down to nearest half-deck — conservative for the player (raises TC)
-    return Math.max(Math.floor(exact * 2) / 2, 0.5);
+    // Round to nearest half-deck (floor inflated TC and oversized bets).
+    return Math.max(Math.round(exact * 2) / 2, 0.5);
 }
 
 export function calculateTrueCount(runningCount, cardsRemaining, deckSize = 52) {
