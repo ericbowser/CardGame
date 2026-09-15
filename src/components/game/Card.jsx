@@ -96,7 +96,7 @@ function Card() {
             </button>
 
             {isDeckShuffled && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-1 sm:px-4 sm:pt-3 lg:px-6 lg:pt-4">
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-1 pr-14 sm:px-4 sm:pr-4 sm:pt-3 lg:px-6 lg:pt-4">
                     <div className="mx-auto flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-b-xl border-x border-b border-white/15 bg-black/70 px-2 py-1 text-center backdrop-blur-md sm:flex-col sm:rounded-xl sm:border sm:px-5 sm:py-3">
                         <p className="text-[11px] font-semibold tracking-wide text-white sm:text-base lg:text-lg">
                             {getGameStatusMessage()}

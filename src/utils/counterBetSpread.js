@@ -17,11 +17,11 @@ export const COUNTER_GOAL_DOUBLE = 2000;
 
 const MIN_UNIT = 5;
 /** Max units when the shoe is strongly +EV (TC ≥ +6). */
-const MAX_SPREAD_UNITS = 40;
+const MAX_SPREAD_UNITS = 30;
 
 /**
- * Count-driven ramp: small bets in poor shoes, press hard when TC is hot.
- * Units × $5 → $5 / $10 / $15 / $40 / $75 / $125 / $175 / $200
+ * Mildly conservative count ramp — still small in poor shoes, less max press.
+ * Units × $5 → $5 / $10 / $15 / $30 / $55 / $90 / $125 / $150
  */
 export function spreadUnitsForTrueCount(spreadTc) {
     if (spreadTc <= -1) {
@@ -34,21 +34,21 @@ export function spreadUnitsForTrueCount(spreadTc) {
         return 3; // $15 — near break-even
     }
     if (spreadTc === 2) {
-        return 8; // $40
+        return 6; // $30
     }
     if (spreadTc === 3) {
-        return 15; // $75
+        return 11; // $55
     }
     if (spreadTc === 4) {
-        return 25; // $125
+        return 18; // $90
     }
     if (spreadTc === 5) {
-        return 35; // $175
+        return 25; // $125
     }
-    return MAX_SPREAD_UNITS; // $200 at TC ≥ +6
+    return MAX_SPREAD_UNITS; // $150 at TC ≥ +6
 }
 
-/** Bankroll risk caps by spread TC — room for max bets when the count is rich. */
+/** Bankroll risk caps by spread TC — slightly tighter than the max-press ramp. */
 function riskFractionForSpreadTc(spreadTc) {
     if (spreadTc <= -1) {
         return 0.01;
@@ -60,18 +60,18 @@ function riskFractionForSpreadTc(spreadTc) {
         return 0.03;
     }
     if (spreadTc === 2) {
-        return 0.06;
+        return 0.05;
     }
     if (spreadTc === 3) {
-        return 0.1;
+        return 0.08;
     }
     if (spreadTc === 4) {
-        return 0.15;
+        return 0.12;
     }
     if (spreadTc === 5) {
-        return 0.2;
+        return 0.15;
     }
-    return 0.25;
+    return 0.18;
 }
 
 /**
