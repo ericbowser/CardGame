@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://erb-think.com/sitemap.xml
+Sitemap: https://execute-engrave.com/sitemap.xml
