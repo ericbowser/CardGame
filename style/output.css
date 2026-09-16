@@ -603,18 +603,6 @@ video {
   }
 }
 
-/* Mobile: column stack was collapsing the table (flex-1 + min-height:0
-       against a non-shrinking settings rail). Give the board a real height
-       and let the shell scroll for controls below. */
-
-@media (max-width: 767px) {
-  .game-shell {
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 .game-table-column {
   display: flex;
   min-height: 0;
@@ -624,14 +612,43 @@ video {
   overflow: hidden;
 }
 
-@media (max-width: 767px) {
-  .game-table-column {
-    flex: 0 0 auto;
-    width: 100%;
-    height: 55dvh;
-    min-height: 55dvh;
-    max-height: 55dvh;
-  }
+.game-board-canvas {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Mobile-only hand status above the board. Hidden on desktop. */
+
+.game-above-board {
+  display: none;
+  width: 100%;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0.15rem 0.35rem;
+}
+
+/* Mobile-only betting strip under the board. Hidden on desktop. */
+
+.game-under-board {
+  display: none;
+  width: 100%;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0.15rem 0.5rem;
+}
+
+.game-ai-glance-slot {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .game-ai-glance {
@@ -642,24 +659,6 @@ video {
   flex-direction: column;
   overflow: hidden;
   padding: 0.25rem 0.15rem 0.5rem;
-}
-
-@media (max-width: 767px) {
-  .game-ai-glance {
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-@media (min-width: 768px) {
-  .game-ai-glance {
-    width: 15.5rem;
-    min-width: 15.5rem;
-    max-width: 15.5rem;
-    max-height: none;
-    height: 100%;
-    padding: 0 0.15rem;
-  }
 }
 
 .game-rail {
@@ -675,14 +674,93 @@ video {
   line-height: 1.4;
 }
 
+/*
+     * Mobile: page scrolls. Board gets a hard pixel/dvh height so it cannot
+     * collapse to 0 when flex siblings (betting, rail) take space.
+     * Order: hand status → board → betting → stats/AI rail → AI glance
+     */
+
 @media (max-width: 767px) {
+  .game-shell {
+    flex: none;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .game-above-board {
+    order: 1;
+    display: flex;
+  }
+
+  .game-table-column {
+    order: 2;
+    flex: none;
+    width: 100%;
+    height: 45dvh;
+    min-height: 280px;
+    max-height: 45dvh;
+    margin-top: 0.125rem;
+    overflow: hidden;
+  }
+
+  /* Inset the felt from the top so dealer cards clear the board edge. */
+
+  .game-board-canvas {
+    padding-top: 0.2rem;
+    box-sizing: border-box;
+    flex: none;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    max-height: 100%;
+  }
+
+  .game-under-board {
+    order: 3;
+    display: flex;
+  }
+
   .game-rail {
+    order: 4;
+    flex: none;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .game-ai-glance-slot {
+    order: 5;
+    flex: none;
+    width: 100%;
+  }
+
+  .game-ai-glance {
     max-height: none;
     overflow: visible;
   }
 }
 
 @media (min-width: 768px) {
+  .game-above-board {
+    display: none !important;
+  }
+
+  .game-under-board {
+    display: none !important;
+  }
+
+  .game-ai-glance-slot,
+        .game-ai-glance {
+    width: 15.5rem;
+    min-width: 15.5rem;
+    max-width: 15.5rem;
+    max-height: none;
+    height: 100%;
+    padding: 0 0.15rem;
+  }
+
   .game-rail {
     width: var(--sidebar-width, 20rem);
     min-width: var(--sidebar-width, 20rem);
@@ -737,10 +815,6 @@ video {
 .inset-x-0 {
   left: 0px;
   right: 0px;
-}
-
-.bottom-0 {
-  bottom: 0px;
 }
 
 .left-3 {
@@ -836,6 +910,10 @@ video {
   display: block;
 }
 
+.inline-block {
+  display: inline-block;
+}
+
 .flex {
   display: flex;
 }
@@ -892,10 +970,6 @@ video {
   height: 24rem;
 }
 
-.h-dvh {
-  height: 100dvh;
-}
-
 .h-full {
   height: 100%;
 }
@@ -922,6 +996,10 @@ video {
 
 .min-h-\[3\.75rem\] {
   min-height: 3.75rem;
+}
+
+.min-h-dvh {
+  min-height: 100dvh;
 }
 
 .w-1\.5 {
@@ -1116,18 +1194,9 @@ video {
   gap: 1rem;
 }
 
-.gap-x-2 {
-  -moz-column-gap: 0.5rem;
-       column-gap: 0.5rem;
-}
-
 .gap-x-4 {
   -moz-column-gap: 1rem;
        column-gap: 1rem;
-}
-
-.gap-y-0\.5 {
-  row-gap: 0.125rem;
 }
 
 .gap-y-1 {
@@ -1196,22 +1265,12 @@ video {
   border-radius: 0.75rem;
 }
 
-.rounded-b-xl {
-  border-bottom-right-radius: 0.75rem;
-  border-bottom-left-radius: 0.75rem;
-}
-
 .border {
   border-width: 1px;
 }
 
 .border-2 {
   border-width: 2px;
-}
-
-.border-x {
-  border-left-width: 1px;
-  border-right-width: 1px;
 }
 
 .border-b {
@@ -1222,8 +1281,8 @@ video {
   border-top-width: 1px;
 }
 
-.border-dashed {
-  border-style: dashed;
+.border-amber-400\/25 {
+  border-color: rgb(251 191 36 / 0.25);
 }
 
 .border-amber-400\/40 {
@@ -1256,6 +1315,10 @@ video {
 
 .border-cyan-400\/50 {
   border-color: rgb(34 211 238 / 0.5);
+}
+
+.border-emerald-400\/25 {
+  border-color: rgb(52 211 153 / 0.25);
 }
 
 .border-emerald-400\/30 {
@@ -1342,6 +1405,10 @@ video {
   background-color: rgb(245 158 11 / var(--tw-bg-opacity, 1));
 }
 
+.bg-amber-500\/10 {
+  background-color: rgb(245 158 11 / 0.1);
+}
+
 .bg-amber-500\/15 {
   background-color: rgb(245 158 11 / 0.15);
 }
@@ -1419,10 +1486,6 @@ video {
   background-color: rgb(6 182 212 / 0.2);
 }
 
-.bg-cyan-950\/20 {
-  background-color: rgb(8 51 68 / 0.2);
-}
-
 .bg-cyan-950\/30 {
   background-color: rgb(8 51 68 / 0.3);
 }
@@ -1433,6 +1496,10 @@ video {
 
 .bg-cyan-950\/80 {
   background-color: rgb(8 51 68 / 0.8);
+}
+
+.bg-emerald-500\/10 {
+  background-color: rgb(16 185 129 / 0.1);
 }
 
 .bg-emerald-600 {
@@ -1673,6 +1740,11 @@ video {
   padding-right: 1rem;
 }
 
+.px-5 {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
 .px-6 {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
@@ -1742,10 +1814,6 @@ video {
 
 .pr-1 {
   padding-right: 0.25rem;
-}
-
-.pr-14 {
-  padding-right: 3.5rem;
 }
 
 .pt-1 {
@@ -1959,10 +2027,6 @@ video {
   color: rgb(103 232 249 / var(--tw-text-opacity, 1));
 }
 
-.text-cyan-300\/80 {
-  color: rgb(103 232 249 / 0.8);
-}
-
 .text-emerald-100 {
   --tw-text-opacity: 1;
   color: rgb(209 250 229 / var(--tw-text-opacity, 1));
@@ -2169,16 +2233,19 @@ body {
   overflow: hidden;
 }
 
-@media (max-width: 1023px) {
-  body {
-    overflow: auto;
-  }
-
+@media (max-width: 767px) {
   html,
     body,
     #root {
     height: auto;
     min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -2325,15 +2392,9 @@ body {
   background-color: rgb(34 211 238 / var(--tw-bg-opacity, 1));
 }
 
-@media not all and (min-width: 768px) {
-  .max-md\:min-h-0 {
-    min-height: 0px;
-  }
-}
-
 @media (min-width: 640px) {
-  .sm\:static {
-    position: static;
+  .sm\:relative {
+    position: relative;
   }
 
   .sm\:left-4 {
@@ -2356,16 +2417,8 @@ body {
     margin-bottom: 1rem;
   }
 
-  .sm\:mt-2 {
-    margin-top: 0.5rem;
-  }
-
   .sm\:block {
     display: block;
-  }
-
-  .sm\:hidden {
-    display: none;
   }
 
   .sm\:h-14 {
@@ -2396,10 +2449,6 @@ body {
     flex-direction: row;
   }
 
-  .sm\:flex-col {
-    flex-direction: column;
-  }
-
   .sm\:items-center {
     align-items: center;
   }
@@ -2416,18 +2465,6 @@ body {
     gap: 1rem;
   }
 
-  .sm\:rounded-lg {
-    border-radius: 0.5rem;
-  }
-
-  .sm\:rounded-xl {
-    border-radius: 0.75rem;
-  }
-
-  .sm\:border {
-    border-width: 1px;
-  }
-
   .sm\:p-4 {
     padding: 1rem;
   }
@@ -2440,34 +2477,9 @@ body {
     padding: 1.5rem;
   }
 
-  .sm\:px-2\.5 {
-    padding-left: 0.625rem;
-    padding-right: 0.625rem;
-  }
-
-  .sm\:px-3 {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-
   .sm\:px-4 {
     padding-left: 1rem;
     padding-right: 1rem;
-  }
-
-  .sm\:px-5 {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-  }
-
-  .sm\:py-1 {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-  }
-
-  .sm\:py-1\.5 {
-    padding-top: 0.375rem;
-    padding-bottom: 0.375rem;
   }
 
   .sm\:py-3 {
@@ -2478,14 +2490,6 @@ body {
   .sm\:py-4 {
     padding-top: 1rem;
     padding-bottom: 1rem;
-  }
-
-  .sm\:pr-4 {
-    padding-right: 1rem;
-  }
-
-  .sm\:pt-3 {
-    padding-top: 0.75rem;
   }
 
   .sm\:text-left {
@@ -2541,6 +2545,14 @@ body {
     display: block;
   }
 
+  .md\:h-dvh {
+    height: 100dvh;
+  }
+
+  .md\:min-h-0 {
+    min-height: 0px;
+  }
+
   .md\:w-1\/4 {
     width: 25%;
   }
@@ -2555,6 +2567,10 @@ body {
 
   .md\:flex-row {
     flex-direction: row;
+  }
+
+  .md\:overflow-hidden {
+    overflow: hidden;
   }
 
   .md\:pr-6 {
@@ -2591,15 +2607,5 @@ body {
   .lg\:text-3xl {
     font-size: 1.875rem;
     line-height: 2.25rem;
-  }
-
-  .lg\:text-base {
-    font-size: 1rem;
-    line-height: 1.5rem;
-  }
-
-  .lg\:text-lg {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
   }
 }

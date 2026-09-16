@@ -48,14 +48,13 @@ beforeEach(() => {
 });
 
 describe('AiGlancePanel', () => {
-    test('shows placeholder when AI is off', () => {
+    test('renders nothing when AI is off', () => {
         mockUseGameContext.mockReturnValue(mockContext({ aiPlayerEnabled: false }));
 
-        render(<AiGlancePanel />);
+        const { container } = render(<AiGlancePanel />);
 
-        expect(screen.getByTestId('ai-glance-panel')).toBeTruthy();
-        expect(screen.getByText(/turn on/i)).toBeTruthy();
-        expect(screen.queryByTestId('ai-glance-table-bet')).toBeNull();
+        expect(container.firstChild).toBeNull();
+        expect(screen.queryByTestId('ai-glance-panel')).toBeNull();
     });
 
     test('streams bankroll, bets, counts, and play decision while AI acts', () => {

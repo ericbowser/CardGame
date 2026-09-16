@@ -32,11 +32,10 @@ function MobileOverheadCamera() {
         const { topY, playerZ, dealerZ, radius } = tableLayout;
         const aspect = size.width / Math.max(size.height, 1);
 
-        // Status banner (top) + action bar (bottom) cover the canvas on phones.
-        // Reserve world-space margin so dealer/player hands sit in the safe band.
-        // Ortho up is -Z, so screen-top = lower world Z (dealer side).
-        const topUiMargin = 1.85;
-        const bottomUiMargin = 1.55;
+        // Status sits above the canvas; still leave room above dealer cards so
+        // they aren't clipped by the top of the board.
+        const topUiMargin = 1.25;
+        const bottomUiMargin = 1.9;
         const topZ = dealerZ - topUiMargin;
         const bottomZ = playerZ + bottomUiMargin;
         const lookZ = (topZ + bottomZ) / 2;

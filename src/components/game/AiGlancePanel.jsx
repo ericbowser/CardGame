@@ -1,4 +1,4 @@
-import { AI_PLAYER_ID, AI_PLAYER_NAME } from '../../constants/aiPlayer';
+import { AI_PLAYER_ID } from '../../constants/aiPlayer';
 import { GameState } from '../../constants/game';
 import { TABLE_RULES } from '../../constants/rules';
 import { useGameContext } from '../../context';
@@ -106,23 +106,7 @@ function AiGlancePanel() {
     const evTone = evValueClass(evPercent);
 
     if (!aiPlayerEnabled) {
-        return (
-            <aside
-                className="game-ai-glance"
-                data-testid="ai-glance-panel"
-                aria-label="AI watch panel"
-            >
-                <div className="rounded-xl border border-dashed border-cyan-400/25 bg-cyan-950/20 p-3">
-                    <div className="font-mono text-[10px] font-bold tracking-wide text-cyan-300/80">
-                        {AI_PLAYER_ID}
-                    </div>
-                    <p className="mt-2 text-xs leading-snug text-white/50">
-                        AI glance stays here while you watch. Turn on {AI_PLAYER_NAME} in the
-                        settings rail to stream bets, counts, and play decisions.
-                    </p>
-                </div>
-            </aside>
-        );
+        return null;
     }
 
     return (

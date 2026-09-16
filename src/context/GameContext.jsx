@@ -31,7 +31,6 @@ import { yieldToMain, yieldToPaint } from '../utils/yieldToMain';
 import { attachE2eBridge } from '../e2e/e2eBridge';
 import { attachDebugLog, debugLog } from '../e2e/debugLog';
 import { getDealerStepMs, isAutomationHost } from '../e2e/e2ePacing';
-import { getCounterWager } from '../utils/counterBetSpread';
 import { useAiPlayer } from '../hooks/useAiPlayer';
 import { TableVisualContext } from './tableVisualContext';
 import {
@@ -909,32 +908,6 @@ export const GameProvider = ({ children }) => {
         gameState === GameState.PlayerPhase ||
         gameState === GameState.DealerPhase ||
         gameState === GameState.CardsDealt;
-
-    useEffect(() => {
-        if (!isDeckShuffled || aiPlayerEnabled || boardBusy || isRoundActive) {
-            return;
-        }
-
-        const spreadBet = getCounterWager(
-            trueCount,
-            playerChips,
-            cardsRemaining,
-            runningCount,
-        );
-        if (spreadBet > 0 && spreadBet <= playerChips) {
-            setBetAmount(spreadBet);
-        }
-    }, [
-        isDeckShuffled,
-        aiPlayerEnabled,
-        boardBusy,
-        isRoundActive,
-        gameState,
-        trueCount,
-        playerChips,
-        runningCount,
-        cardsRemaining,
-    ]);
 
     useAiPlayer({
         enabled: aiPlayerEnabled,

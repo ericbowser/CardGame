@@ -18,7 +18,18 @@ function readStoredWidth() {
     return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, stored));
 }
 
-function ResizableSidebar({ main, glance = null, sidebar, className = '' }) {
+/**
+ * Desktop: main | glance | rail
+ * Mobile:  aboveBoard → main → underBoard (betting) → rail → glance (AI last)
+ */
+function ResizableSidebar({
+    main,
+    aboveBoard = null,
+    underBoard = null,
+    glance = null,
+    sidebar,
+    className = '',
+}) {
     const [width, setWidth] = useState(readStoredWidth);
     const dragging = useRef(false);
     const startX = useRef(0);
@@ -76,9 +87,22 @@ function ResizableSidebar({ main, glance = null, sidebar, className = '' }) {
             className={`game-shell ${className}`}
             style={{ '--sidebar-width': `${width}px` }}
         >
+            {aboveBoard && (
+                <div className="game-above-board" data-testid="mobile-above-board">
+                    {aboveBoard}
+                </div>
+            )}
+
             <div className="game-table-column">{main}</div>
 
-            {glance}
+            {underBoard && (
+                <div className="game-under-board" data-testid="mobile-under-board">
+                    {underBoard}
+                </div>
+            )}
+
+            {/* Desktop glance beside table; on mobile CSS moves this after the rail. */}
+            {glance && <div className="game-ai-glance-slot">{glance}</div>}
 
             <div
                 className="hidden shrink-0 touch-none md:block"

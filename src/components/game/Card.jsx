@@ -1,20 +1,11 @@
-import { GameState, Who } from '../../constants/game';
+import { GameState } from '../../constants/game';
 import { AI_PLAYER_ID } from '../../constants/aiPlayer';
 import { useGameContext } from '../../context';
-import { calculateHandValue } from '../../utils/cardUtils';
+import TopGameStats from './TopGameStats';
 import TableCanvas from '../three/TableCanvas';
 
 function Card() {
     const {
-        playerHands,
-        activeHandIndex,
-        dealerCards,
-        playerCountDisplay,
-        dealerCount,
-        showHoleCard,
-        gameState,
-        winner,
-        roundOver,
         betAmount,
         playerChips,
         isDeckShuffled,
@@ -27,50 +18,15 @@ function Card() {
         boardBusy,
         aiPlayerEnabled,
         resetGame,
+        gameState,
+        roundOver,
     } = useGameContext();
-
-    const getGameStatusMessage = () => {
-        if (!gameState) {
-            return 'Ready to play';
-        }
-
-        switch (gameState) {
-            case GameState.DeckShuffled:
-                return 'Deck shuffled — place your bet';
-            case GameState.CardsDealt:
-                return 'Dealing cards...';
-            case GameState.PlayerPhase:
-                return aiPlayerEnabled
-                    ? `${AI_PLAYER_ID} playing hand ${activeHandIndex + 1}…`
-                    : playerHands.length > 1
-                        ? `Hand ${activeHandIndex + 1} — Hit, Stay, or Split?`
-                        : 'Your turn — Hit, Stay, or Split?';
-            case GameState.DealerPhase:
-                return aiPlayerEnabled ? `${AI_PLAYER_ID} watching dealer…` : "Dealer's turn...";
-            case GameState.GameConcluded:
-                if (winner === 'Push') return "Push — it's a tie";
-                if (winner === 'Mixed') return 'Split round complete';
-                if (winner === Who.Player) return 'You win!';
-                if (winner === Who.Dealer) return 'Dealer wins';
-                return 'Round over';
-            default:
-                return '';
-        }
-    };
 
     const canPlayerAct = gameState === GameState.PlayerPhase;
     const isGameOver = gameState === GameState.GameConcluded;
     const isDealerTurn = gameState === GameState.DealerPhase;
-    const hasPlayerCards = playerHands.some((hand) => hand.cards.length > 0);
-    const showCards = gameState && (hasPlayerCards || dealerCards.length > 0);
     const canDealAgain = roundOver && betAmount > 0 && betAmount <= playerChips;
     const showActionBar = isDeckShuffled && (canPlayerAct || isGameOver || isDealerTurn);
-
-    const dealerDisplay = showHoleCard
-        ? dealerCount
-        : dealerCards[0]
-            ? `${calculateHandValue([dealerCards[0]])} + ?`
-            : '?';
 
     return (
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl">
@@ -90,34 +46,16 @@ function Card() {
                 type="button"
                 data-testid="reset-game"
                 onClick={resetGame}
-                className="absolute right-2 top-2 z-30 rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white/45 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/70 hover:text-white/80 sm:right-3 sm:top-3 sm:px-2.5 sm:py-1.5 sm:text-xs"
+                className="absolute right-2 top-2 z-30 hidden rounded-md border border-white/10 bg-black/50 px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-white/45 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/70 hover:text-white/80 sm:right-3 sm:top-3 sm:block"
             >
                 Reset
             </button>
 
+            {/* Desktop only: floating status over the felt. Mobile uses its own panel above. */}
             {isDeckShuffled && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-1 pr-14 sm:px-4 sm:pr-4 sm:pt-3 lg:px-6 lg:pt-4">
-                    <div className="mx-auto flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-b-xl border-x border-b border-white/15 bg-black/70 px-2 py-1 text-center backdrop-blur-md sm:flex-col sm:rounded-xl sm:border sm:px-5 sm:py-3">
-                        <p className="text-[11px] font-semibold tracking-wide text-white sm:text-base lg:text-lg">
-                            {getGameStatusMessage()}
-                        </p>
-                        {aiPlayerEnabled && (
-                            <span className="font-mono text-[10px] font-bold tracking-wide text-cyan-300 sm:hidden">
-                                {AI_PLAYER_ID}
-                            </span>
-                        )}
-                        <div
-                            className={`flex flex-wrap justify-center gap-1 text-[11px] sm:mt-2 sm:gap-4 sm:text-sm lg:text-base ${
-                                showCards ? 'visible' : 'invisible'
-                            }`}
-                        >
-                            <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-bold text-amber-100 sm:rounded-lg sm:px-3 sm:py-1">
-                                Dealer: {dealerDisplay}
-                            </span>
-                            <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-bold text-emerald-100 sm:rounded-lg sm:px-3 sm:py-1">
-                                Player: {playerCountDisplay || '—'}
-                            </span>
-                        </div>
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 hidden px-4 pt-3 sm:block lg:px-6 lg:pt-4">
+                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/70 px-5 py-3 text-center backdrop-blur-md">
+                        <TopGameStats />
                     </div>
                 </div>
             )}
@@ -129,7 +67,7 @@ function Card() {
             </div>
 
             {!isDeckShuffled && (
-                <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-black/80 px-4 py-3 text-center backdrop-blur-md sm:static sm:py-4">
+                <div className="pointer-events-auto relative z-20 shrink-0 border-t border-white/10 bg-black/80 px-4 py-3 text-center backdrop-blur-md sm:py-4">
                     <p className="mb-1 text-lg font-bold text-white">Welcome to the table</p>
                     <p className="mb-3 text-sm text-white/70">
                         Choose 1 or 6 decks in Game Controls, then shuffle to start
@@ -147,10 +85,10 @@ function Card() {
 
             {isDeckShuffled && (
                 <div
-                    className={`pointer-events-auto z-20 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
+                    className={`pointer-events-auto z-20 shrink-0 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
                         showActionBar
-                            ? 'absolute inset-x-0 bottom-0 sm:static'
-                            : 'invisible hidden min-h-[3.75rem] sm:block sm:min-h-[4.5rem]'
+                            ? 'relative'
+                            : 'invisible hidden min-h-[3.75rem] sm:relative sm:block sm:min-h-[4.5rem]'
                     }`}
                 >
                     {canPlayerAct && !aiPlayerEnabled && (

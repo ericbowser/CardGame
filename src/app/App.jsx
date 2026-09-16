@@ -6,8 +6,8 @@ const App = () => {
     const textMode = isCounterTextMode();
 
     return (
-        <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#040404]">
-            <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1 max-md:min-h-0">
+        <div className="flex min-h-dvh flex-col bg-[#040404] md:h-dvh md:min-h-0 md:overflow-hidden">
+            <main className="flex w-full flex-1 flex-col p-1 md:min-h-0 md:overflow-hidden">
                 {textMode ? <CounterTextBoard /> : <GameBoard />}
             </main>
         </div>

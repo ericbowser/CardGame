@@ -13,16 +13,19 @@ body {
     overflow: hidden;
 }
 
-@media (max-width: 1023px) {
-    body {
-        overflow: auto;
-    }
-
+@media (max-width: 767px) {
     html,
     body,
     #root {
         height: auto;
         min-height: 100%;
+        min-height: 100dvh;
+    }
+
+    body {
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -42,17 +45,6 @@ body {
         }
     }
 
-    /* Mobile: column stack was collapsing the table (flex-1 + min-height:0
-       against a non-shrinking settings rail). Give the board a real height
-       and let the shell scroll for controls below. */
-    @media (max-width: 767px) {
-        .game-shell {
-            overflow-x: hidden;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-    }
-
     .game-table-column {
         display: flex;
         min-height: 0;
@@ -62,14 +54,41 @@ body {
         overflow: hidden;
     }
 
-    @media (max-width: 767px) {
-        .game-table-column {
-            flex: 0 0 auto;
-            width: 100%;
-            height: 55dvh;
-            min-height: 55dvh;
-            max-height: 55dvh;
-        }
+    .game-board-canvas {
+        display: flex;
+        min-height: 0;
+        min-width: 0;
+        flex: 1 1 0%;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Mobile-only hand status above the board. Hidden on desktop. */
+    .game-above-board {
+        display: none;
+        width: 100%;
+        flex-shrink: 0;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.25rem 0.15rem 0.35rem;
+    }
+
+    /* Mobile-only betting strip under the board. Hidden on desktop. */
+    .game-under-board {
+        display: none;
+        width: 100%;
+        flex-shrink: 0;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.25rem 0.15rem 0.5rem;
+    }
+
+    .game-ai-glance-slot {
+        display: flex;
+        width: 100%;
+        flex-shrink: 0;
+        flex-direction: column;
+        min-height: 0;
     }
 
     .game-ai-glance {
@@ -80,24 +99,6 @@ body {
         flex-direction: column;
         overflow: hidden;
         padding: 0.25rem 0.15rem 0.5rem;
-    }
-
-    @media (max-width: 767px) {
-        .game-ai-glance {
-            max-height: none;
-            overflow: visible;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .game-ai-glance {
-            width: 15.5rem;
-            min-width: 15.5rem;
-            max-width: 15.5rem;
-            max-height: none;
-            height: 100%;
-            padding: 0 0.15rem;
-        }
     }
 
     .game-rail {
@@ -113,14 +114,94 @@ body {
         line-height: 1.4;
     }
 
+    /*
+     * Mobile: page scrolls. Board gets a hard pixel/dvh height so it cannot
+     * collapse to 0 when flex siblings (betting, rail) take space.
+     * Order: hand status → board → betting → stats/AI rail → AI glance
+     */
     @media (max-width: 767px) {
+        .game-shell {
+            flex: none;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .game-above-board {
+            order: 1;
+            display: flex;
+        }
+
+        .game-table-column {
+            order: 2;
+            flex: none;
+            width: 100%;
+            height: 45dvh;
+            min-height: 280px;
+            max-height: 45dvh;
+            margin-top: 0.125rem;
+            overflow: hidden;
+        }
+
+        /* Inset the felt from the top so dealer cards clear the board edge. */
+        .game-board-canvas {
+            padding-top: 0.2rem;
+            box-sizing: border-box;
+        }
+
+        .game-board-canvas {
+            flex: none;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            max-height: 100%;
+        }
+
+        .game-under-board {
+            order: 3;
+            display: flex;
+        }
+
         .game-rail {
+            order: 4;
+            flex: none;
+            width: 100%;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .game-ai-glance-slot {
+            order: 5;
+            flex: none;
+            width: 100%;
+        }
+
+        .game-ai-glance {
             max-height: none;
             overflow: visible;
         }
     }
 
     @media (min-width: 768px) {
+        .game-above-board {
+            display: none !important;
+        }
+
+        .game-under-board {
+            display: none !important;
+        }
+
+        .game-ai-glance-slot,
+        .game-ai-glance {
+            width: 15.5rem;
+            min-width: 15.5rem;
+            max-width: 15.5rem;
+            max-height: none;
+            height: 100%;
+            padding: 0 0.15rem;
+        }
+
         .game-rail {
             width: var(--sidebar-width, 20rem);
             min-width: var(--sidebar-width, 20rem);
