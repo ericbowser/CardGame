@@ -1,4 +1,3 @@
-import { AI_PLAYER_ID } from '../../constants/aiPlayer';
 import { useGameContext } from '../../context';
 import { getStatusMessage } from '../../utils/handStatusMessage';
 import HandTotals from './HandTotals';
@@ -6,6 +5,7 @@ import HandTotals from './HandTotals';
 /**
  * Round status + hand totals overlaid on the felt.
  * Camera reserves safe bands so dealer/player stay clear of this chrome.
+ * AI id is not repeated here — status copy already names the AI when active.
  */
 function TopGameStats({ compact = false, showReset = false }) {
     const {
@@ -35,11 +35,6 @@ function TopGameStats({ compact = false, showReset = false }) {
                 >
                     {status}
                 </p>
-                {aiPlayerEnabled && (
-                    <span className="mt-0.5 inline-block font-mono text-[10px] font-bold tracking-wide text-cyan-300 sm:hidden">
-                        {AI_PLAYER_ID}
-                    </span>
-                )}
                 <HandTotals compact={compact} />
             </div>
             {showReset && (
