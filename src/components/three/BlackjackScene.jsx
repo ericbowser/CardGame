@@ -32,22 +32,24 @@ function MobileOverheadCamera() {
         const { topY, playerZ, dealerZ, radius } = tableLayout;
         const aspect = size.width / Math.max(size.height, 1);
 
-        // Status sits above the canvas; still leave room above dealer cards so
-        // they aren't clipped by the top of the board.
-        const topUiMargin = 1.25;
-        const bottomUiMargin = 1.9;
+        // Real phones: short canvas + Hit/Stay bar made cover-framing crop the
+        // dealer. Use generous margins and never shrink the depth axis.
+        const topUiMargin = 2.15;
+        const bottomUiMargin = 2.05;
         const topZ = dealerZ - topUiMargin;
         const bottomZ = playerZ + bottomUiMargin;
-        const lookZ = (topZ + bottomZ) / 2;
-        const playDepth = Math.max(bottomZ - topZ, 4.5);
-        const playWidth = Math.min(radius * 1.05, 6.4);
+        const playDepth = Math.max(bottomZ - topZ, 5.2);
+        const playWidth = Math.min(radius * 1.2, 7.2);
 
+        // Contain (fit both axes) — prefer letterboxing over cropping cards.
         let worldHeight = playDepth;
         let worldWidth = worldHeight * aspect;
-        if (worldWidth > playWidth) {
+        if (worldWidth < playWidth) {
             worldWidth = playWidth;
             worldHeight = worldWidth / Math.max(aspect, 0.01);
         }
+
+        const lookZ = (topZ + bottomZ) / 2;
 
         camera.up.set(0, 0, -1);
         camera.position.set(0, topY + 6, lookZ);
@@ -212,7 +214,10 @@ function SceneContents({
                         handId="dealer"
                         cards={dealerCards}
                         backSrc={facedown}
-                        zPosition={tableLayout.dealerZ}
+                        // Nudge dealer toward the player on mobile so cards clear the canvas top.
+                        zPosition={
+                            tableLayout.dealerZ + (framing.isMobile ? 0.7 : 0)
+                        }
                         showHoleCard={showHoleCard}
                         holeCardIndex={1}
                         dealOffset={0}
