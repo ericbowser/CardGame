@@ -63,16 +63,6 @@ body {
         overflow: hidden;
     }
 
-    /* Mobile-only hand status above the board. Hidden on desktop. */
-    .game-above-board {
-        display: none;
-        width: 100%;
-        flex-shrink: 0;
-        flex-direction: column;
-        gap: 0.5rem;
-        padding: 0.25rem 0.15rem 0.35rem;
-    }
-
     /* Mobile-only betting strip under the board. Hidden on desktop. */
     .game-under-board {
         display: none;
@@ -115,9 +105,9 @@ body {
     }
 
     /*
-     * Mobile: page scrolls. Board gets a hard pixel/dvh height so it cannot
-     * collapse to 0 when flex siblings (betting, rail) take space.
-     * Order: hand status → board → betting → stats/AI rail → AI glance
+     * Mobile: page scrolls. Board uses a tall fixed dvh so the overhead camera
+     * can frame dealer + player (status/actions overlay the felt, not the layout).
+     * Order: board → betting → stats/AI rail → AI glance
      */
     @media (max-width: 767px) {
         .game-shell {
@@ -128,19 +118,13 @@ body {
             overflow: visible;
         }
 
-        .game-above-board {
-            order: 1;
-            display: flex;
-        }
-
         .game-table-column {
-            order: 2;
+            order: 1;
             flex: none;
             width: 100%;
-            height: 46dvh;
-            min-height: 300px;
-            max-height: 50dvh;
-            margin-top: 0.25rem;
+            height: 55dvh;
+            min-height: 55dvh;
+            max-height: 55dvh;
             overflow: hidden;
         }
 
@@ -150,18 +134,15 @@ body {
             height: 100%;
             min-height: 100%;
             max-height: 100%;
-            padding-top: 0.4rem;
-            box-sizing: border-box;
-            background: #060606;
         }
 
         .game-under-board {
-            order: 3;
+            order: 2;
             display: flex;
         }
 
         .game-rail {
-            order: 4;
+            order: 3;
             flex: none;
             width: 100%;
             max-height: none;
@@ -169,7 +150,7 @@ body {
         }
 
         .game-ai-glance-slot {
-            order: 5;
+            order: 4;
             flex: none;
             width: 100%;
         }
@@ -181,10 +162,6 @@ body {
     }
 
     @media (min-width: 768px) {
-        .game-above-board {
-            display: none !important;
-        }
-
         .game-under-board {
             display: none !important;
         }

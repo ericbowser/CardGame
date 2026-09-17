@@ -46,31 +46,28 @@ function Card() {
                 type="button"
                 data-testid="reset-game"
                 onClick={resetGame}
-                className="absolute right-2 top-2 z-30 hidden rounded-md border border-white/10 bg-black/50 px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-white/45 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/70 hover:text-white/80 sm:right-3 sm:top-3 sm:block"
+                className="absolute right-2 top-2 z-30 rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white/45 backdrop-blur-sm transition hover:border-white/25 hover:bg-black/70 hover:text-white/80 sm:right-3 sm:top-3 sm:px-2.5 sm:py-1.5 sm:text-xs"
             >
                 Reset
             </button>
 
-            {/* Desktop only: floating status over the felt. Mobile uses its own panel above. */}
+            {/* Overlay on the felt — camera reserves safe bands above/below for this UI. */}
             {isDeckShuffled && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 hidden px-4 pt-3 sm:block lg:px-6 lg:pt-4">
-                    <div className="mx-auto max-w-xl rounded-xl border border-white/15 bg-black/70 px-5 py-3 text-center backdrop-blur-md">
-                        <TopGameStats />
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-1 pt-0 sm:px-4 sm:pt-3 lg:px-6 lg:pt-4">
+                    <div className="mx-auto max-w-xl rounded-b-xl border-x border-b border-white/15 bg-black/70 px-2 py-1.5 text-center backdrop-blur-md sm:rounded-xl sm:border sm:px-5 sm:py-3">
+                        <TopGameStats compact />
                     </div>
                 </div>
             )}
 
-            <div
-                className="relative min-h-0 flex-1 overflow-hidden bg-[#060606]"
-                data-testid="table-canvas"
-            >
+            <div className="relative min-h-0 flex-1 overflow-hidden bg-[#060606]" data-testid="table-canvas">
                 <div className="absolute inset-0">
                     <TableCanvas />
                 </div>
             </div>
 
             {!isDeckShuffled && (
-                <div className="pointer-events-auto relative z-20 shrink-0 border-t border-white/10 bg-black/80 px-4 py-3 text-center backdrop-blur-md sm:py-4">
+                <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-black/80 px-4 py-3 text-center backdrop-blur-md sm:static sm:py-4">
                     <p className="mb-1 text-lg font-bold text-white">Welcome to the table</p>
                     <p className="mb-3 text-sm text-white/70">
                         Choose 1 or 6 decks in Game Controls, then shuffle to start
@@ -88,10 +85,10 @@ function Card() {
 
             {isDeckShuffled && (
                 <div
-                    className={`pointer-events-auto z-20 shrink-0 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
+                    className={`pointer-events-auto z-20 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
                         showActionBar
-                            ? 'relative'
-                            : 'invisible hidden min-h-[3.75rem] sm:relative sm:block sm:min-h-[4.5rem]'
+                            ? 'absolute inset-x-0 bottom-0 sm:static'
+                            : 'invisible hidden min-h-[3.75rem] sm:static sm:block sm:min-h-[4.5rem]'
                     }`}
                 >
                     {canPlayerAct && !aiPlayerEnabled && (

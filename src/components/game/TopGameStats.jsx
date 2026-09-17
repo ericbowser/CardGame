@@ -4,9 +4,8 @@ import { getStatusMessage } from '../../utils/handStatusMessage';
 import HandTotals from './HandTotals';
 
 /**
- * Top-of-board round status + hand totals.
- * Mobile: rendered in its own panel above the felt.
- * Desktop: rendered as an overlay over the table.
+ * Round status + hand totals overlaid on the felt.
+ * Camera reserves safe bands so dealer/player stay clear of this chrome.
  */
 function TopGameStats({ compact = false, showReset = false }) {
     const {
@@ -31,17 +30,17 @@ function TopGameStats({ compact = false, showReset = false }) {
             <div className="min-w-0 flex-1 text-center">
                 <p
                     className={`font-semibold leading-snug tracking-wide text-white ${
-                        compact ? 'text-[11px]' : 'text-sm sm:text-base'
+                        compact ? 'text-[11px] sm:text-base' : 'text-sm sm:text-base'
                     }`}
                 >
                     {status}
                 </p>
                 {aiPlayerEnabled && (
-                    <span className="mt-0.5 inline-block font-mono text-[10px] font-bold tracking-wide text-cyan-300">
+                    <span className="mt-0.5 inline-block font-mono text-[10px] font-bold tracking-wide text-cyan-300 sm:hidden">
                         {AI_PLAYER_ID}
                     </span>
                 )}
-                <HandTotals />
+                <HandTotals compact={compact} />
             </div>
             {showReset && (
                 <button

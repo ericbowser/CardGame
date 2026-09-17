@@ -20,11 +20,10 @@ function readStoredWidth() {
 
 /**
  * Desktop: main | glance | rail
- * Mobile:  aboveBoard → main → underBoard (betting) → rail → glance (AI last)
+ * Mobile:  main → underBoard (betting) → rail → glance (AI last)
  */
 function ResizableSidebar({
     main,
-    aboveBoard = null,
     underBoard = null,
     glance = null,
     sidebar,
@@ -87,12 +86,6 @@ function ResizableSidebar({
             className={`game-shell ${className}`}
             style={{ '--sidebar-width': `${width}px` }}
         >
-            {aboveBoard && (
-                <div className="game-above-board" data-testid="mobile-above-board">
-                    {aboveBoard}
-                </div>
-            )}
-
             <div className="game-table-column">{main}</div>
 
             {underBoard && (

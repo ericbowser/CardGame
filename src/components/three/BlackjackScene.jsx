@@ -29,20 +29,26 @@ function MobileOverheadCamera() {
             return;
         }
 
-        const { topY, playerZ, dealerZ } = tableLayout;
+        const { topY, playerZ, dealerZ, radius } = tableLayout;
         const aspect = size.width / Math.max(size.height, 1);
 
-        // Fit both hands with equal breathing room. Never crop the depth axis —
-        // short phone canvases letterbox sideways instead of chopping cards.
-        const topUiMargin = 1.4;
-        const bottomUiMargin = 1.5;
+        // Status banner (top) + action bar (bottom) cover the canvas on phones.
+        // Reserve world-space margin so dealer/player hands sit in the safe band.
+        // Ortho up is -Z, so screen-top = lower world Z (dealer side).
+        const topUiMargin = 1.85;
+        const bottomUiMargin = 1.55;
         const topZ = dealerZ - topUiMargin;
         const bottomZ = playerZ + bottomUiMargin;
-        const playDepth = Math.max(bottomZ - topZ, 4.8);
         const lookZ = (topZ + bottomZ) / 2;
+        const playDepth = Math.max(bottomZ - topZ, 4.5);
+        const playWidth = Math.min(radius * 1.05, 6.4);
 
-        const worldHeight = playDepth;
-        const worldWidth = worldHeight * aspect;
+        let worldHeight = playDepth;
+        let worldWidth = worldHeight * aspect;
+        if (worldWidth > playWidth) {
+            worldWidth = playWidth;
+            worldHeight = worldWidth / Math.max(aspect, 0.01);
+        }
 
         camera.up.set(0, 0, -1);
         camera.position.set(0, topY + 6, lookZ);

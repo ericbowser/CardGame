@@ -4,7 +4,6 @@ import BettingSystem from './BettingSystem';
 import VitalBettingStats from './VitalBettingStats';
 import AiPlayerPanel from './AiPlayerPanel';
 import AiGlancePanel from './AiGlancePanel';
-import TopGameStats from './TopGameStats';
 import ShoeSettingsPanel from './ShoeSettingsPanel';
 import DeckTrackerPanel from './DeckTrackerPanel';
 import GamePanel from '../layout/GamePanel';
@@ -13,13 +12,6 @@ import { useGameContext } from '../../context';
 
 const GameBoard = () => {
     const { isDeckShuffled, alertMessage, aiPlayerEnabled } = useGameContext();
-
-    // Mobile-only: hand totals sit above the felt in their own panel (not over the cards).
-    const aboveBoard = isDeckShuffled ? (
-        <GamePanel title="Hand status" testId="panel-hand-status">
-            <TopGameStats showReset />
-        </GamePanel>
-    ) : null;
 
     const tableColumn = (
         <>
@@ -95,7 +87,6 @@ const GameBoard = () => {
         <div className="flex h-full min-h-0 flex-1 flex-col md:min-h-0">
             <ResizableSidebar
                 main={tableColumn}
-                aboveBoard={aboveBoard}
                 underBoard={underBoard}
                 glance={aiPlayerEnabled ? <AiGlancePanel /> : null}
                 sidebar={settingsColumn}
