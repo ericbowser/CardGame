@@ -29,27 +29,20 @@ function MobileOverheadCamera() {
             return;
         }
 
-        const { topY, playerZ, dealerZ, radius } = tableLayout;
+        const { topY, playerZ, dealerZ } = tableLayout;
         const aspect = size.width / Math.max(size.height, 1);
 
-        // Real phones: short canvas + Hit/Stay bar made cover-framing crop the
-        // dealer. Use generous margins and never shrink the depth axis.
-        const topUiMargin = 2.15;
-        const bottomUiMargin = 2.05;
+        // Fit both hands with equal breathing room. Never crop the depth axis —
+        // short phone canvases letterbox sideways instead of chopping cards.
+        const topUiMargin = 1.4;
+        const bottomUiMargin = 1.5;
         const topZ = dealerZ - topUiMargin;
         const bottomZ = playerZ + bottomUiMargin;
-        const playDepth = Math.max(bottomZ - topZ, 5.2);
-        const playWidth = Math.min(radius * 1.2, 7.2);
-
-        // Contain (fit both axes) — prefer letterboxing over cropping cards.
-        let worldHeight = playDepth;
-        let worldWidth = worldHeight * aspect;
-        if (worldWidth < playWidth) {
-            worldWidth = playWidth;
-            worldHeight = worldWidth / Math.max(aspect, 0.01);
-        }
-
+        const playDepth = Math.max(bottomZ - topZ, 4.8);
         const lookZ = (topZ + bottomZ) / 2;
+
+        const worldHeight = playDepth;
+        const worldWidth = worldHeight * aspect;
 
         camera.up.set(0, 0, -1);
         camera.position.set(0, topY + 6, lookZ);
@@ -214,10 +207,7 @@ function SceneContents({
                         handId="dealer"
                         cards={dealerCards}
                         backSrc={facedown}
-                        // Nudge dealer toward the player on mobile so cards clear the canvas top.
-                        zPosition={
-                            tableLayout.dealerZ + (framing.isMobile ? 0.7 : 0)
-                        }
+                        zPosition={tableLayout.dealerZ}
                         showHoleCard={showHoleCard}
                         holeCardIndex={1}
                         dealOffset={0}

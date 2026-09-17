@@ -61,12 +61,10 @@ function Card() {
             )}
 
             <div
-                className={`relative min-h-0 flex-1 overflow-hidden bg-[#060606] max-sm:pt-3 ${
-                    showActionBar ? 'max-sm:pb-[3.75rem]' : ''
-                }`}
+                className="relative min-h-0 flex-1 overflow-hidden bg-[#060606]"
                 data-testid="table-canvas"
             >
-                <div className="absolute inset-x-0 bottom-0 top-0 max-sm:top-3">
+                <div className="absolute inset-0">
                     <TableCanvas />
                 </div>
             </div>
@@ -90,10 +88,9 @@ function Card() {
 
             {isDeckShuffled && (
                 <div
-                    className={`pointer-events-auto z-20 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
+                    className={`pointer-events-auto z-20 shrink-0 border-t border-white/15 bg-black/90 p-2 backdrop-blur-md sm:p-4 ${
                         showActionBar
-                            ? // Mobile: overlay so the felt keeps full height (avoids dealer crop).
-                              'absolute inset-x-0 bottom-0 sm:relative sm:inset-auto sm:shrink-0'
+                            ? 'relative'
                             : 'invisible hidden min-h-[3.75rem] sm:relative sm:block sm:min-h-[4.5rem]'
                     }`}
                 >
