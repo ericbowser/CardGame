@@ -19,8 +19,8 @@ function readStoredWidth() {
 }
 
 /**
- * Desktop: main | glance | rail
- * Mobile:  main → underBoard (betting) → rail → glance (AI last)
+ * Desktop: main | rail
+ * Mobile:  main → underBoard (betting or AI live) → rail
  */
 function ResizableSidebar({
     main,

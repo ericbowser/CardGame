@@ -30,10 +30,9 @@ export default defineConfig({
         assetsInlineLimit: 4096,
     },
     assetsInclude: [
-        '**/*.docx',
         '**/*.glb',
         '**/src/assets/images/*.{png}',
-        '**/src/assets/*.{png|jpg}',
+        '**/src/assets/*.{png,jpg}',
         '**/src/assets/*.{js}',
     ],
 });

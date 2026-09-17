@@ -42,10 +42,10 @@ function StatCell({ label, children, testId, className = '' }) {
 }
 
 /**
- * At-a-glance AI telemetry beside the table — bet sizing, counts, and play choice.
- * Intentionally redundant with the settings rail for watch/debug.
+ * At-a-glance AI telemetry — bet sizing, counts, and play choice.
+ * Rendered below the board / in the settings rail (not beside the table).
  */
-function AiGlancePanel() {
+function AiGlancePanel({ embedded = false }) {
     const {
         aiPlayerEnabled,
         aiPlayerStatus,
@@ -111,7 +111,7 @@ function AiGlancePanel() {
 
     return (
         <aside
-            className="game-ai-glance"
+            className={embedded ? 'w-full' : 'game-ai-glance'}
             data-testid="ai-glance-panel"
             aria-label="AI play details"
         >

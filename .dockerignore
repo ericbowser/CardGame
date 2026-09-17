@@ -1,24 +1,55 @@
-**/.classpath
-**/.dockerignore
-**/.env
+# Keep Docker build context lean — production image should not ship
+# editor, test, or design-only files.
+
 **/.git
 **/.gitignore
+**/.dockerignore
+**/.env
+**/.env.*
+**/.idea
+**/.vscode
+**/.cursor
+**/.vs
 **/.project
 **/.settings
+**/.classpath
 **/.toolstarget
-**/.vs
-**/.vscode
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
+
+**/node_modules
+**/dist
+**/coverage
+**/npm-debug.log*
+**/secrets.dev.yaml
+**/values.dev.yaml
+
+# Compose / Docker meta (not needed inside the image context recursively)
 **/charts
 **/docker-compose*
 **/compose*
 **/Dockerfile*
-**/node_modules
-**/npm-debug.log
-**/obj
-**/secrets.dev.yaml
-**/values.dev.yaml
+
+# Tests & e2e — not needed to serve the built site
+cypress/
+cypress.config.js
+**/__tests__/
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+**/*.spec.jsx
+jest.config.js
+jest.setup.js
+babel.config.js
+
+# Design / docs
+BlackJack_flow.docx
 LICENSE
 README.md
+SECURITY.md
+
+# Unused assets
+src/assets/facedown.jpg
+src/assets/facedown2.jpg
+src/assets/facedown3.jpg
+
+# Generated CSS is rebuilt in the image if needed; prefer Vite dist deploy
+style/output.css

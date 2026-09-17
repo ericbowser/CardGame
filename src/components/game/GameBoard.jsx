@@ -26,7 +26,8 @@ const GameBoard = () => {
         </>
     );
 
-    // Mobile: sits directly under the board (CSS). Desktop: hidden — betting is in the rail.
+    // Mobile: under the board. Desktop: hidden (content lives in the rail).
+    // AI on → live stats here instead of betting (keeps the table full-width).
     const underBoard = (
         <div className="flex flex-col gap-2">
             {!isDeckShuffled && (
@@ -34,16 +35,25 @@ const GameBoard = () => {
                     <ShoeSettingsPanel />
                 </GamePanel>
             )}
-            <GamePanel
-                title={isDeckShuffled ? 'Betting' : 'Manual betting'}
-                testId="panel-betting-mobile"
-            >
-                <BettingSystem rail />
-            </GamePanel>
+            {aiPlayerEnabled ? (
+                <GamePanel
+                    title="AI live"
+                    subtitle="Watch mode — bets and counts"
+                    testId="panel-ai-glance-mobile"
+                >
+                    <AiGlancePanel embedded />
+                </GamePanel>
+            ) : (
+                <GamePanel
+                    title={isDeckShuffled ? 'Betting' : 'Manual betting'}
+                    testId="panel-betting-mobile"
+                >
+                    <BettingSystem rail />
+                </GamePanel>
+            )}
         </div>
     );
 
-    // Priority on mobile: bankroll → tracker → AI last (one-time toggle).
     const settingsColumn = (
         <div className="flex flex-col gap-3 pb-2">
             <GamePanel title="Bankroll & count" testId="panel-bankroll">
@@ -58,14 +68,28 @@ const GameBoard = () => {
                 </div>
             )}
 
-            <div className="hidden md:block">
-                <GamePanel
-                    title={isDeckShuffled ? 'Betting' : 'Manual betting'}
-                    testId="panel-betting"
-                >
-                    <BettingSystem rail />
-                </GamePanel>
-            </div>
+            {!aiPlayerEnabled && (
+                <div className="hidden md:block">
+                    <GamePanel
+                        title={isDeckShuffled ? 'Betting' : 'Manual betting'}
+                        testId="panel-betting"
+                    >
+                        <BettingSystem rail />
+                    </GamePanel>
+                </div>
+            )}
+
+            {aiPlayerEnabled && (
+                <div className="hidden md:block">
+                    <GamePanel
+                        title="AI live"
+                        subtitle="Watch mode — bets and counts"
+                        testId="panel-ai-glance"
+                    >
+                        <AiGlancePanel embedded />
+                    </GamePanel>
+                </div>
+            )}
 
             {isDeckShuffled && (
                 <GamePanel title="Deck tracker" testId="panel-tracker">
@@ -88,7 +112,6 @@ const GameBoard = () => {
             <ResizableSidebar
                 main={tableColumn}
                 underBoard={underBoard}
-                glance={aiPlayerEnabled ? <AiGlancePanel /> : null}
                 sidebar={settingsColumn}
             />
         </div>

@@ -107,7 +107,7 @@ body {
     /*
      * Mobile: page scrolls. Board uses a tall fixed dvh so the overhead camera
      * can frame dealer + player (status/actions overlay the felt, not the layout).
-     * Order: board → betting → stats/AI rail → AI glance
+     * Order: board → betting/AI live → stats/AI rail
      */
     @media (max-width: 767px) {
         .game-shell {

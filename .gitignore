@@ -1,16 +1,47 @@
-.idea/*
-.idea
+# Dependencies & build
+node_modules/
+dist/
+coverage/
 
-node_modules/*
+# Generated CSS (created by `npm run tail` / prebuild)
+style/output.css
 
-dist/*
-dist
+# Editor / IDE
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
 
-coverage
+# Env & local secrets
+.env
+.env.*
+!.env.example
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Cypress artifacts (keep specs + config tracked)
 cypress/videos/
 cypress/screenshots/
 cypress/downloads/
 
+# Design / notes not needed at runtime or on the server
+BlackJack_flow.docx
+
+# Unused card-back variants (app uses facedown4.jpg only)
+src/assets/facedown.jpg
+src/assets/facedown2.jpg
+src/assets/facedown3.jpg
+
+# Local debug
 .cursor/debug*.log
