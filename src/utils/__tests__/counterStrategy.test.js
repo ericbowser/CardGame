@@ -402,15 +402,15 @@ describe('countingUtils', () => {
 
 describe('counterBetSpread', () => {
 
-    test('spread ramps from small negative bets to max press', () => {
+    test('spread ramps smoothly from small bets to a capped press', () => {
         expect(spreadUnitsForTrueCount(-1)).toBe(1);
         expect(spreadUnitsForTrueCount(0)).toBe(2);
         expect(spreadUnitsForTrueCount(1)).toBe(3);
-        expect(spreadUnitsForTrueCount(2)).toBe(8);
-        expect(spreadUnitsForTrueCount(3)).toBe(15);
-        expect(spreadUnitsForTrueCount(4)).toBe(25);
-        expect(spreadUnitsForTrueCount(5)).toBe(35);
-        expect(spreadUnitsForTrueCount(10)).toBe(40);
+        expect(spreadUnitsForTrueCount(2)).toBe(5);
+        expect(spreadUnitsForTrueCount(3)).toBe(8);
+        expect(spreadUnitsForTrueCount(4)).toBe(12);
+        expect(spreadUnitsForTrueCount(5)).toBe(16);
+        expect(spreadUnitsForTrueCount(10)).toBe(20);
     });
 
     test('wager amounts follow count quality', () => {
@@ -418,12 +418,12 @@ describe('counterBetSpread', () => {
         expect(getCounterWager(-1, 1000, 52, -1)).toBe(5);
         expect(getCounterWager(0, 1000, 52, 0)).toBe(10);
         expect(getCounterWager(1.2, 1000, 52, 1)).toBe(15);
-        // Hot shoes — press hard
-        expect(getCounterWager(2.2, 1000, 52, 2)).toBe(40);
-        expect(getCounterWager(3.5, 1000, 52, 3)).toBe(75);
-        expect(getCounterWager(4.1, 1000, 52, 4)).toBe(125);
-        expect(getCounterWager(5.2, 1000, 52, 5)).toBe(175);
-        expect(getCounterWager(6.5, 1000, 52, 6)).toBe(200);
+        // Hot shoes — smoother press (max $100 at TC ≥ +6 on a $1000 bankroll)
+        expect(getCounterWager(2.2, 1000, 52, 2)).toBe(25);
+        expect(getCounterWager(3.5, 1000, 52, 3)).toBe(40);
+        expect(getCounterWager(4.1, 1000, 52, 4)).toBe(60);
+        expect(getCounterWager(5.2, 1000, 52, 5)).toBe(80);
+        expect(getCounterWager(6.5, 1000, 52, 6)).toBe(100);
     });
 
     test('never exceeds available chips', () => {
@@ -433,10 +433,10 @@ describe('counterBetSpread', () => {
 
     test('caps big bets relative to bankroll', () => {
         // Pass null RC so trueCount drives the tier (not shoe-adjusted spread TC).
-        // TC5 → 20% of $139 = $27 → floored to unit $25 (units want $175)
-        expect(getCounterWager(5, 139, 40, null)).toBe(25);
-        // TC6 → 25% of $559 = $139 → floored after ceil clamp → $135
-        expect(getCounterWager(6, 559, 30, null)).toBe(135);
+        // TC5 → 10% of $139 = $13 → floored after ceil clamp → $10 (units want $80)
+        expect(getCounterWager(5, 139, 40, null)).toBe(10);
+        // TC6 → 12% of $559 = $67 → floored after ceil clamp → $65
+        expect(getCounterWager(6, 559, 30, null)).toBe(65);
     });
 
     test('wongs out on deeply negative counts', () => {

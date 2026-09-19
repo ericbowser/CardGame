@@ -29,7 +29,7 @@ describe('Card counter — text mode', () => {
         });
     });
 
-    it('plays until $2000 or max rounds (text mode, no WebGL)', () => {
+    it('plays until $3000 or max rounds (text mode, no WebGL)', () => {
         cy.prepareCounterShoe(1);
 
         cy.playCounterSession({
@@ -41,7 +41,7 @@ describe('Card counter — text mode', () => {
             .invoke('text')
             .then((text) => {
                 const chips = Number.parseInt(text.replace(/[^\d]/g, ''), 10);
-                cy.task('log', `\n=== Text mode $2000 run complete ===`);
+                cy.task('log', `\n=== Text mode $3000 run complete ===`);
                 cy.task('log', `Final bankroll: $${chips} (goal $${GOAL_TARGET_DOUBLE})`);
             });
     });

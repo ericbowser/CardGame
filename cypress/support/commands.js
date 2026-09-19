@@ -1,7 +1,7 @@
 /** Mirror src/constants/game.js + src/utils/counterBetSpread.js */
 const GOAL_START = 1000;
 const GOAL_TARGET = 1075;
-const GOAL_TARGET_DOUBLE = 2000;
+const GOAL_TARGET_DOUBLE = 3000;
 const MAX_ROUNDS = 200;
 const MAX_ROUNDS_DOUBLE = 500;
 

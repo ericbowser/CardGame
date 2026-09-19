@@ -121,8 +121,8 @@ describe('VitalBettingStats', () => {
 
         render(<VitalBettingStats />);
 
-        // RC +8 / 1 deck → spread TC 8 → max 40u = $200
-        expect(screen.getByTestId('suggested-bet')).toHaveTextContent('$200');
+        // RC +8 / 1 deck → spread TC 8 → max 20u = $100
+        expect(screen.getByTestId('suggested-bet')).toHaveTextContent('$100');
         expect(screen.getByTestId('suggested-bet')).toHaveTextContent('52c');
     });
 });

@@ -234,7 +234,7 @@ export function useAiPlayer({
                         continue;
                     }
 
-                    // Lock in a bankroll win — stop pressing once the double-bankroll goal is hit.
+                    // Lock in a bankroll win — stop pressing once the session goal is hit.
                     if (snap.playerChips >= COUNTER_GOAL_DOUBLE) {
                         snap.setAiPlayerStatus('ready');
                         snap.setAiPlayerLastAction(
